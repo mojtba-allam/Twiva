@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Admin;
+use App\Models\User;
+use App\Models\Categories;
+use App\Models\Order;
+use App\Models\Products;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,12 +16,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create 10 users
-        \App\Models\User::factory(100)->create();
-        \App\Models\Admin::factory(10)->create();
-        \App\Models\Categories::factory(10)->create();
-        \App\Models\Order::factory(50)->create();
-        \App\Models\Products::factory(100)->create();
+        // Create admins first
+        $admins = Admin::factory(10)->create();
 
+        // Create users
+        $users = User::factory(100)->create();
+
+        // Create categories using existing admins
+        $categories = Categories::factory(10)->create([
+            'admin_id' => fn() => $admins->random()->id
+        ]);
+
+        // Create products using existing admins and categories
+        $products = Products::factory(100)->create([
+            'admin_id' => fn() => $admins->random()->id,
+            'category_id' => fn() => $categories->random()->id
+        ]);
+
+        // Create orders without product_id field
+        Order::factory(50)->create([
+            'user_id' => fn() => $users->random()->id
+        ]);
     }
 }

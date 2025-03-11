@@ -17,29 +17,29 @@ class OrderFactory extends Factory
      */
     public function definition(): array
     {
-        // Create products and get their full records
-        $products = Products::factory()->count(3)->create();
+        // Get random products
+        $products = Products::inRandomOrder()->limit(3)->get();
 
-        // Create products list with quantities
+        // Create products list
         $products_list = $products->map(function ($product) {
             return [
                 'product_id' => $product->id,
-                'quantity' => fake()->numberBetween(1, 5) // Random quantity for each product
+                'quantity' => fake()->numberBetween(1, 5)
             ];
         })->toArray();
+
+        // Calculate total price
+        $total_price = 0;
+        foreach ($products_list as $item) {
+            $product = Products::find($item['product_id']);
+            $total_price += $product->price * $item['quantity'];
+        }
 
         return [
             'user_id' => User::factory(),
             'products_list' => json_encode($products_list),
             'total_quantity' => collect($products_list)->sum('quantity'),
-
-            'total_price' => $products->sum(
-                function ($product) use ($products_list) {
-                $quantity = collect($products_list)
-                    ->firstWhere('product_id', $product->id)['quantity'];
-                return $product->price * $quantity;
-            }),
-
+            'total_price' => $total_price,
             'status' => fake()->randomElement(['pending', 'processing', 'completed', 'cancelled']),
             'created_at' => now(),
             'updated_at' => now(),

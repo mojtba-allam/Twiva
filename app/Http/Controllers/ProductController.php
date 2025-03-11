@@ -41,7 +41,11 @@ class ProductController extends Controller
      */
     public function show(string $id)
     {
-        return Products::find($id);
+        try {
+            return Products::find($id);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
     }
 
     /**
@@ -67,5 +71,26 @@ class ProductController extends Controller
     {
         $product = Products::find($id);
         $product->delete();
+    }
+
+    public function edit(Request $request, string $id){
+
+            $product = Products::find($id);
+            if(!$product){
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+            // if($product->admin_id !== $request->user()->id){
+            //     return response()->json(['message' => 'You are not authorized to update this product'], 403);
+            // }
+
+            $updateData = $request->only(['title', 'description', 'price', 'quantity', 'image_url','admin_id','category_id']);
+            $product->update($updateData);
+            $product->save();
+
+            return response()->json([
+                'data' => $product,
+
+                'message' => 'Product updated successfully'], 200);
+
     }
 }

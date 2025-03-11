@@ -6,13 +6,15 @@ use Illuminate\Http\Request;
 use App\Models\Admin;
 class AdminController extends Controller
 {
+    protected $fillable = ['name', 'email', 'password'];
+
+    protected $hidden = ['password'];
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         return Admin::paginate(5);
-
     }
 
     /**

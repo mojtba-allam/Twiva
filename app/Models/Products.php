@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Products extends Model
 {
+    protected $fillable = ['title', 'description', 'price', 'quantity', 'image_url','admin_id','category_id'];
     /** @use HasFactory<\Database\Factories\ProductsFactory> */
     use HasFactory;
     /**
