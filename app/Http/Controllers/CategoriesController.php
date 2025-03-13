@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Categories;
+use Illuminate\Support\Facades\Auth;
 class CategoriesController extends Controller
 {
     /**
@@ -19,9 +20,13 @@ class CategoriesController extends Controller
      */
     public function store(Request $request)
     {
+        $admin = Auth::guard('admin')->user();
+        if (!$admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
         $category = new Categories();
         $category->name = $request->name;
-        $category->admin_id = $request->admin_id;
+        $category->admin_id = $admin->id;
         $category->created_at = now();
         $category->updated_at = now();
         $category->save();

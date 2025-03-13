@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Admin;
+use Illuminate\Container\Attributes\Auth;
+use Illuminate\Support\Facades\Hash;
 class AdminController extends Controller
 {
     protected $fillable = ['name', 'email', 'password'];
 
-    protected $hidden = ['password'];
     /**
      * Display a listing of the resource.
      */
@@ -25,7 +26,7 @@ class AdminController extends Controller
         $admin = new Admin();
         $admin->name = $request->name;
         $admin->email = $request->email;
-        $admin->password = $request->password;
+        $admin->password = Hash::make($request->password);
         $admin->image = $request->image;
         $admin->bio = $request->bio;
         $admin->save();
@@ -48,7 +49,7 @@ class AdminController extends Controller
         $admin = Admin::find($id);
         $admin->name = $request->name;
         $admin->email = $request->email;
-        $admin->password = $request->password;
+        $admin->password = Hash::make($request->password);
         $admin->image = $request->image;
         $admin->bio = $request->bio;
         $admin->save();
@@ -59,6 +60,8 @@ class AdminController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $admin = Admin::find($id);
+        $admin->delete();
+        
     }
 }

@@ -32,22 +32,33 @@ class UserController extends Controller
      */
     public function show(Request $request ,string $id)
     {
-        try {
-            $user = User::findOrFail($id);
-            if($user->id !== $request->user()->id){
-                return response()->json(['message' => 'You are not authorized to view this user'], 403);
-            }
-            return response()->json([
-                'user' => $user
-            ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        $user = User::find($id);
+        if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
-        } catch (\Exception $e) {
-            Log::error('Error fetching user: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'An error occurred while fetching the user'
-            ], 500);
         }
+        return $user;
+        // if($user->id !== $request->user()->id){
+        //     return response()->json(['message' => 'You are not authorized to view this user'], 403);
+        // }
+        // return response()->json([
+        //     'user' => $user
+        // ], 200);
+        // try {
+        //     $user = User::findOrFail($id);
+        //     if($user->id !== $request->user()->id){
+        //         return response()->json(['message' => 'You are not authorized to view this user'], 403);
+        //     }
+        //     return response()->json([
+        //         'user' => $user
+        //     ], 200);
+        // } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        //     return response()->json(['message' => 'User not found'], 404);
+        // } catch (\Exception $e) {
+        //     Log::error('Error fetching user: ' . $e->getMessage());
+        //     return response()->json([
+        //         'message' => 'An error occurred while fetching the user'
+        //     ], 500);
+        // }
     }
 
     /**

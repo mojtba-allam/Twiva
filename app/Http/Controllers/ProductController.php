@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Products;
+use Illuminate\Support\Facades\Auth;
 class ProductController extends Controller
 {
     /**
@@ -22,13 +23,20 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $admin = Auth::guard('admin')->user();
+
+        // if (!$admin) {
+        //     return response()->json(['message' => 'Unauthorized'], 403);
+        // }
+
+
         $product = new Products();
         $product->title = $request->title;
         $product->description = $request->description;
         $product->price = $request->price;
         $product->quantity = $request->quantity;
         $product->image_url = $request->image_url;
-        $product->admin_id = $request->admin_id;
+        $product->admin_id = $admin->id;
         $product->category_id = $request->category_id;
         $product->created_at = now();
         $product->updated_at = now();
