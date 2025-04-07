@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Categories;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 class CategoriesController extends Controller
 {
     /**
@@ -55,9 +56,18 @@ class CategoriesController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request ,string $id)
     {
-        $category = Categories::find($id);
-        $category->delete();
+        $admin = Auth::guard('admin')->user();
+        try {
+            $category = Categories::findOrFail($id);
+            $category->delete();
+            return response()->json(['message' => 'Category deleted successfully'], 200);
+            } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Category not found'], 404);
+            }
+            // if ($category->admin_id !== $admin->id) {
+            // return response()->json(['message' => 'Unauthorized'], 403);
+            // }
     }
 }

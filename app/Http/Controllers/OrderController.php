@@ -8,8 +8,11 @@ use App\Models\Products;
 use App\Models\Categories;
 use App\Models\Admin;
 use App\Models\User;
-// use Illuminate\Container\Attributes\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\OrderResource;
+
 
 
 class OrderController extends Controller
@@ -20,76 +23,27 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $user_id = $user->id;
         if (!$user) {
             return response()->json(['message' => 'Not Found'], 404);
         }
-        if($user instanceof Admin){
-        return Order::paginate(100)->through(function ($order) {
-            // Decode the products_list JSON
-            $products_list = json_decode($order->products_list, true);
 
-            // Fetch all related products
-            $products = Products::whereIn('id', collect($products_list)->pluck('product_id'))->get();
+        if ($user instanceof Admin) {
+            // Fetch and return orders for the admin
+            return OrderResource::collection(Order::paginate(100));
+        }
 
-            // Add product URLs to the products_list
-            $products_list_with_urls = collect($products_list)->map(function ($item) use ($products) {
-                $product = $products->firstWhere('id', $item['product_id']);
-                return [
-                    'product_id' => $item['product_id'],
-                    'product_title' => $product->title,
-                    'quantity' => $item['quantity'],
-                    'product_price' => $product->price .' $' ,
-                    // 'product_category' => Categories::where('id', $product->category_id)->first()->name,
-                    'product_image' => $product->image_url,
-                    'product_url' => $product->product_url
-                ];
-            })->toArray();
+        if ($user instanceof User) {
+            // Fetch orders for the specific user
+            $orders = Order::where('user_id', $user->id)->get();
 
-            // Add the enhanced products_list to the order
-            $order->products_list = $products_list_with_urls;
-
-            $order->total_price = $order->total_price . ' $';
-
-            return $order;
-        });
-        }elseif($user instanceof User){
-
-            $orders = Order::where('user_id', $user_id)->get();
             if ($orders->isEmpty()) {
                 return response()->json(['message' => 'No orders found for this user'], 404);
             }
-            return $orders->map(function ($order) {
-                // Decode the products_list JSON
-                $products_list = json_decode($order->products_list, true);
 
-                // Fetch all related products
-                $products = Products::whereIn('id', collect($products_list)->pluck('product_id'))->get();
-
-                // Add product URLs to the products_list
-                $products_list_with_urls = collect($products_list)->map(function ($item) use ($products) {
-                    $product = $products->firstWhere('id', $item['product_id']);
-                    return [
-                        'product_id' => $item['product_id'],
-                        'product_title' => $product->title,
-                        'quantity' => $item['quantity'],
-                        'product_price' => $product->price .' $',
-                        'product_category' => optional(Categories::where('id', $product->category_id)->first())->name ?? 'Unknown Category',
-                        'product_image' => $product->image_url,
-                        'product_url' => $product->product_url
-                    ];
-                })->toArray();
-
-                // Add the enhanced products_list to the order
-                $order->products_list = $products_list_with_urls;
-
-                return $order;
-            });
-
+            return  OrderResource::collection($orders);
         }
-        else{
-            return response()->json(['message' => 'You are not authorized to view this page'], 403);
-        }
+
+        return response()->json(['message' => 'You are not authorized to view this page'], 403);
     }
 
     /**
@@ -97,7 +51,6 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-
         $user_id = Auth::guard('user')->id();
 
         // Get the products list from request
@@ -118,7 +71,7 @@ class OrderController extends Controller
 
         // Calculate total quantity
         $total_quantity = collect($products_list)->sum('quantity');
-
+        try{
         $order = new Order();
         $order->user_id = $user_id;
         $order->products_list = json_encode($products_list); // Encode the array to JSON
@@ -128,19 +81,64 @@ class OrderController extends Controller
         $order->created_at = now();
         $order->updated_at = now();
         $order->save();
-
-        return response()->json(['message' => 'Order created successfully'], 201);
+        } catch (ModelNotFoundException $e) {
+        return response()->json(['message' => 'Order has problem'], 404);
+        }
+        return response()->json(['message' => 'Order created successfully'], 200);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
-    {
-
-        $order = Order::find($id);
-        return $order;
+    public function show(Request $request, string $id)
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['message' => 'Not Found'], 404);
     }
+
+    if ($user instanceof Admin) {
+        // Admins can see any order by ID
+        $order = Order::find($id);
+    } elseif ($user instanceof User) {
+        // Users can only see their own orders
+        $order = Order::where('id', $id)->where('user_id', $user->id)->first();
+    } else {
+        return response()->json(['message' => 'You are not authorized to view this page'], 403);
+    }
+
+    // If order not found
+    if (!$order) {
+        return response()->json(['message' => 'Order not found'], 404);
+    }
+
+    // Decode the products_list JSON
+    $products_list = json_decode($order->products_list, true);
+
+    // Fetch all related products
+    $products = Products::whereIn('id', collect($products_list)->pluck('product_id'))->get();
+
+    // Add product details
+    $products_list_with_details = collect($products_list)->map(function ($item) use ($products) {
+        $product = $products->firstWhere('id', $item['product_id']);
+        return [
+            'product_id' => $item['product_id'],
+            'product_title' => $product->title,
+            'quantity' => $item['quantity'],
+            'product_price' => $product->price . ' $',
+            'product_category' => optional(Categories::find($product->category_id))->name ?? 'Unknown Category',
+            'product_image' => $product->image_url,
+            'product_url' => $product->product_url
+        ];
+    })->toArray();
+
+    // Replace the raw list with the enhanced one
+    $order->products_list = $products_list_with_details;
+    $order->total_price = $order->total_price . ' $';
+
+    return $order;
+}
+
 
     /**
      * Update the specified resource in storage.

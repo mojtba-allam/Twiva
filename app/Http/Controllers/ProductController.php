@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Categories;
 use Illuminate\Http\Request;
 use App\Models\Products;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\ProductResource;
 class ProductController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
     public function index()
     {
-        return Products::paginate(10)->through(function ($product) {
-            $product->price = $product->price . ' $';
-            return $product;
-        });
+        $products = Products::paginate(10);
+        return ProductResource::collection($products);
     }
 
     /**
@@ -24,10 +25,11 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $admin = Auth::guard('admin')->user();
+        
 
-        // if (!$admin) {
-        //     return response()->json(['message' => 'Unauthorized'], 403);
-        // }
+        if (!$admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }else{
 
 
         $product = new Products();
@@ -41,20 +43,18 @@ class ProductController extends Controller
         $product->created_at = now();
         $product->updated_at = now();
         $product->save();
-        return response()->json(['message' => 'Product created successfully'], 201);
+        return response()->json(['message' => 'Product created successfully'], 201);}
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show( $id)
     {
-        try {
-            return Products::find($id);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Product not found'], 404);
-        }
+        $product = Products::findOrfail($id);
+        return new ProductResource($product);
     }
+
 
     /**
      * Update the specified resource in storage.

@@ -19,11 +19,13 @@ Route::post('/login', [AuthController::class, 'login']); //login user
 Route::get('/users', [UserController::class, 'index']); //show all users
 Route::get('/users/{id}', [UserController::class, 'show']); //show one user
 
-Route::get('/products/index', [ProductController::class, 'index']); //show all products
-Route::get('/products/{id}', [ProductController::class, 'show']); //show one product
+Route::get('/products/index', [ProductController::class, 'index'])->name('products.index'); //show all products
+Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show'); //show one product
 
 Route::get('/categories', [CategoriesController::class, 'index']); //show all categories
 Route::get('/categories/{id}', [CategoriesController::class, 'show']); //show one category with its products
+Route::get('/categories/{id}/delete', [CategoriesController::class, ' destroy']); //show one category with its products
+
 
 Route::middleware('auth:admin')->group(function () {
 
@@ -43,11 +45,10 @@ Route::middleware('auth:user')->group(function () {
     Route::patch('/users/{id}/edit', [UserController::class, 'edit']); //edit a user
 
     Route::get('/orders', [OrderController::class, 'index']); //show all orders
-    Route::post('/orders/{id}', [OrderController::class, 'show']); //show one order
-    Route::post('/orders/new', [OrderController::class, 'store']);//store an order
 
-    // Route::apiResource('orders', OrderController::class);
-    // Route::apiResource('products', ProductController::class);
+
+    Route::get('/orders/{id}', [OrderController::class, 'show']); //show one order
+    Route::post('/orders/new', [OrderController::class, 'store']); //store an order
 
     Route::post('/logout', [AuthController::class, 'logout']);
 });
