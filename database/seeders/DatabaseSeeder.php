@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Categories;
 use App\Models\Order;
 use App\Models\Products;
-
+use App\Models\BusinessAccount;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
         // Create users
         $users = User::factory(100)->create();
 
+        // Create business accounts
+        $businessAccounts = BusinessAccount::factory(10)->create();
+
         // Create categories using existing admins
         $categories = Categories::factory(10)->create([
             'admin_id' => fn() => $admins->random()->id
@@ -29,7 +32,7 @@ class DatabaseSeeder extends Seeder
 
         // Create products using existing admins and categories
         $products = Products::factory(100)->create([
-            'admin_id' => fn() => $admins->random()->id,
+            'business_account_id' => fn() => $businessAccounts->random()->id,
             'category_id' => fn() => $categories->random()->id
         ]);
 

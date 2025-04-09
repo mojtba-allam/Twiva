@@ -18,9 +18,8 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->string('image')->nullable();
-            $table->string('bio')->nullable();
-            $table->string('created_at');
-            $table->string('updated_at');
+            $table->text('bio')->nullable();
+            $table->timestamps();
         });
     }
 

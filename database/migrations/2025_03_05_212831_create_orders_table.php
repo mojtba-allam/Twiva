@@ -18,8 +18,7 @@ return new class extends Migration
             $table->integer('total_quantity')->required();
             $table->decimal('total_price', 10, 2)->required();
             $table->string('status')->required();
-            $table->string('created_at')->required();
-            $table->string('updated_at')->required();
+            $table->timestamps();
         });
     }
 

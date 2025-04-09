@@ -9,15 +9,12 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\BusinessAccountController;
 
-Route::get('/admins/index', [AdminController::class, 'index']); //show all admins
-Route::get('/admins/{id}', [AdminController::class, 'show']); //show all admins
 Route::post('/admins/login', [AdminAuthController::class, 'login']); //login admin
 
 Route::post('/register', [AuthController::class, 'register']); //register user
 Route::post('/login', [AuthController::class, 'login']); //login user
-Route::get('/users', [UserController::class, 'index']); //show all users
-Route::get('/users/{id}', [UserController::class, 'show']); //show one user
 
 Route::get('/products/index', [ProductController::class, 'index'])->name('products.index'); //show all products
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show'); //show one product
@@ -28,6 +25,8 @@ Route::get('/categories/{id}/delete', [CategoriesController::class, ' destroy'])
 
 
 Route::middleware('auth:admin')->group(function () {
+
+    Route::get('/users', [UserController::class, 'index']); //show all users
 
     Route::put('/admins/{id}/edit', [AdminController::class, 'edit']); //edit admin
     Route::post('/admins/logout', [AdminAuthController::class, 'logout']); //logout admin
@@ -53,6 +52,25 @@ Route::middleware('auth:user')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+
+Route::middleware(['auth:admin,user'])->group(function () {
+
+    Route::get('/admins/index', [AdminController::class, 'index']); //show all admins
+    Route::get('/admins/{id}', [AdminController::class, 'show']); //show all admins
+    Route::get('/users/{id}', [UserController::class, 'show']); //show one user
+});
+
+Route::prefix('business')->group(function () {
+    Route::get('/index', [BusinessAccountController::class, 'index']);
+    Route::post('/register', [BusinessAccountController::class, 'register']);
+    Route::post('/login', [BusinessAccountController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/profile', [BusinessAccountController::class, 'profile']);
+        Route::put('/profile', [BusinessAccountController::class, 'updateProfile']);
+        Route::post('/logout', [BusinessAccountController::class, 'logout']);
+    });
+});
 
 
 

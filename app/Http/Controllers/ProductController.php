@@ -25,7 +25,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $admin = Auth::guard('admin')->user();
-        
+
 
         if (!$admin) {
             return response()->json(['message' => 'Unauthorized'], 403);

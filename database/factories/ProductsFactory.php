@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\Admin;
 use App\Models\Categories;
+use App\Models\BusinessAccount;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Products>
  */
@@ -26,7 +26,7 @@ class ProductsFactory extends Factory
             'product_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
-            'admin_id' => Admin::factory(),
+            'business_account_id' => BusinessAccount::factory(),
             'category_id' => Categories::factory(),
         ];
     }

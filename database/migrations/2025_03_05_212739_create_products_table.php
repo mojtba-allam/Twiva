@@ -14,15 +14,14 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('title')->required();
-            $table->string('admin_id')->required();
+            $table->string('business_account_id')->required();
             $table->string('description')->required();
             $table->string('price')->required();
             $table->string('image_url')->nullable();
             $table->string('product_url')->nullable();
             $table->string('category_id')->required();
             $table->string('quantity')->required();
-            $table->string('created_at')->required();
-            $table->string('updated_at')->required();
+            $table->timestamps();
         });
     }
 

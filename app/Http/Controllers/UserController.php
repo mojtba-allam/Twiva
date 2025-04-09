@@ -30,35 +30,27 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request ,string $id)
+    public function show($id)
     {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+        $user = auth()->user();
+
+        // Check if the authenticated user is an admin
+        if ($user instanceof \App\Models\Admin) {
+            // Admin can view any user's data
+            $userData = \App\Models\User::find($id);
+        } else {
+            // Regular user can only view their own data
+            if ($user->id != $id) {
+                return response()->json(['message' => 'Unauthorized.'], 403);
+            }
+            $userData = $user;
         }
-        return $user;
-        // if($user->id !== $request->user()->id){
-        //     return response()->json(['message' => 'You are not authorized to view this user'], 403);
-        // }
-        // return response()->json([
-        //     'user' => $user
-        // ], 200);
-        // try {
-        //     $user = User::findOrFail($id);
-        //     if($user->id !== $request->user()->id){
-        //         return response()->json(['message' => 'You are not authorized to view this user'], 403);
-        //     }
-        //     return response()->json([
-        //         'user' => $user
-        //     ], 200);
-        // } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        //     return response()->json(['message' => 'User not found'], 404);
-        // } catch (\Exception $e) {
-        //     Log::error('Error fetching user: ' . $e->getMessage());
-        //     return response()->json([
-        //         'message' => 'An error occurred while fetching the user'
-        //     ], 500);
-        // }
+
+        if (!$userData) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        return response()->json($userData);
     }
 
     /**
