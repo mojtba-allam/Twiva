@@ -6,25 +6,51 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Products extends Model
 {
-    protected $fillable = ['title', 'description', 'price', 'quantity', 'image_url','admin_id','category_id'];
-    /** @use HasFactory<\Database\Factories\ProductsFactory> */
     use HasFactory;
-    /**
-     * Get all of the Products for the Products
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function Admin(): BelongsTo
+
+    protected $fillable = [
+        'title',
+        'description',
+        'price',
+        'quantity',
+        'image_url',
+        'business_account_id',
+        'category_id',
+        'status',
+        'rejection_reason'
+    ];
+
+    // Status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+
+    // Scope for approved products only
+    public function scopeApproved($query)
     {
-        return $this->belongsTo(Admin::class, 'foreign_key', 'local_key');
+        return $query->where('status', self::STATUS_APPROVED);
     }
-    public function Orders(): HasMany
+
+    // Scope for pending products
+    public function scopePending($query)
     {
-        return $this->hasMany(Order::class, 'foreign_key');
+        return $query->where('status', self::STATUS_PENDING);
     }
-    public function Categories(): BelongsTo
+
+    public function businessAccount(): BelongsTo
+    {
+        return $this->belongsTo(BusinessAccount::class, 'business_account_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Categories::class, 'category_id');
     }

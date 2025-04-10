@@ -62,13 +62,14 @@ class BusinessAccountController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::guard('business')->attempt($request->only('email', 'password'))) {
+        $business = BusinessAccount::where('email', $request->email)->first();
+
+        if (!$business || !Hash::check($request->password, $business->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        $business = BusinessAccount::where('email', $request->email)->firstOrFail();
         $token = $business->createToken('auth_token')->plainTextToken;
 
         return response()->json([

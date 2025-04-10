@@ -48,6 +48,10 @@ return [
             'driver' => 'sanctum',
             'provider' => 'users',
         ],
+        'business' => [
+            'driver' => 'sanctum',
+            'provider' => 'business_accounts',
+        ],
     ],
 
     /*
@@ -76,6 +80,10 @@ return [
         'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\Admin::class,
+        ],
+        'business_accounts' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\BusinessAccount::class,
         ],
 
         // 'users' => [
@@ -107,6 +115,12 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'business_accounts' => [
+            'provider' => 'business_accounts',
+            'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

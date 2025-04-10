@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Products;
 use App\Models\Categories;
+use App\Models\User;
 
 class OrderResource extends JsonResource
 {
@@ -14,37 +15,51 @@ class OrderResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-        public function toArray($request)
-        {
+    public function toArray($request): array
+    {
+        // Basic order information that's always included
+        $response = [
+            'id' => $this->id,
+            'user' => [
+                'id' => $this->user_id,
+                'name' => optional($this->user)->name,
+            ],
+            'status' => $this->status,
+            'total_quantity' => $this->total_quantity,
+            'total_price' => number_format($this->total_price, 2) . ' $',
+            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+        ];
+
+        // If this is a show request (single order), include full products details
+        if ($request->route()->getName() === 'orders.show') {
             // Decode the products_list JSON
             $products_list = json_decode($this->products_list, true);
 
-            // Fetch all related products
-            $products = Products::whereIn('id', collect($products_list)->pluck('product_id'))->get();
+            // Fetch all related products with their categories
+            $products = Products::with('category')
+                ->whereIn('id', collect($products_list)->pluck('product_id'))
+                ->get();
 
-            // Map over the products_list to add URLs and other details
-            $products_list_with_urls = collect($products_list)->map(function ($item) use ($products) {
+            // Map over the products_list to add details
+            $response['products'] = collect($products_list)->map(function ($item) use ($products) {
                 $product = $products->firstWhere('id', $item['product_id']);
                 return [
                     'product_id' => $item['product_id'],
                     'product_title' => $product->title,
                     'quantity' => $item['quantity'],
-                    'product_price' => $product->price . ' $',
-                    'product_category' => optional(Categories::where('id', $product->category_id)->first())->name ?? 'Unknown Category',
+                    'unit_price' => number_format($product->price, 2) . ' $',
+                    'subtotal' => number_format($product->price * $item['quantity'], 2) . ' $',
+                    'product_category' => optional($product->category)->name ?? 'Unknown Category',
                     'product_image' => $product->image_url,
                     'product_url' => $product->product_url
                 ];
-            })->toArray();
-
-            // Add the enhanced products_list to the order
-            $this->products_list = $products_list_with_urls;
-
-            // Return the transformed order data
-            return [
-                'id' => $this->id,
-                'user_id' => $this->user_id,
-                'total_price' => $this->total_price . ' $',
-                'products_list' => $this->products_list,
-            ];
+            })->values()->toArray();
+        } else {
+            // For index/list view, just include the URL to view order details
+            $response['order_details_url'] = url("/api/orders/{$this->id}");
         }
+
+        return $response;
     }
+}

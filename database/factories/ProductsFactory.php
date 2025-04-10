@@ -23,9 +23,10 @@ class ProductsFactory extends Factory
             'price' => fake()->randomFloat(2, 10, 100),
             'quantity' => "100",
             'image_url' => fake()->imageUrl(),
-            'product_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
+            'status' => fake()->randomElement(['pending', 'approved', 'rejected']),
+            'rejection_reason' => fake()->sentence(),
             'business_account_id' => BusinessAccount::factory(),
             'category_id' => Categories::factory(),
         ];

@@ -22,30 +22,26 @@ class ProductResource extends JsonResource
 
         return [
             'id' => $this->id,
-
-             'product_url' => $this->when(
-            $request->routeIs('products.index'), // Show product_url only for products.index
-            $this->product_url
-        ),
-
             'title' => $this->title,
-
-           'description' => $this->when(
-                $request->routeIs('products.show'),
-                $this->description
-            ),
-
-            'price' => $this->price . ' $',
-
-            'quantity' => $this->when(
-                $request->routeIs('products.show'),
-                $this->quantity
-            ),
-
+            'description' => $this->description,
+            'price' => $this->price,
+            'quantity' => $this->quantity,
             'image_url' => $this->image_url,
-            'category_name' => $category->name ?? 'Unknown Category', // Use category name
-            'admin_id' => $admin->name ?? 'Unknown Admin', // Use admin name
-
+            'category_id' => $this->category_id,
+            'business_account_id' => $this->business_account_id,
+            'status' => $this->status,
+            'rejection_reason' => $this->when($this->status === 'rejected', $this->rejection_reason),
+            'url' => route('products.show', $this->id),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'category' => [
+                'name' => $this->whenLoaded('category', fn() => $this->category->name),
+                'url' => $this->whenLoaded('category', fn() => route('categories.show', $this->category_id))
+            ],
+            'business_account' => [
+                'name' => $this->whenLoaded('businessAccount', fn() => $this->businessAccount->name),
+                'url' => $this->whenLoaded('businessAccount', fn() => route('business.profile', $this->business_account_id))
+            ],
         ];
     }
 }

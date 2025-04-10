@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('title')->required();
-            $table->string('business_account_id')->required();
-            $table->string('description')->required();
-            $table->string('price')->required();
+            $table->string('title');
+            $table->string('business_account_id');
+            $table->string('description');
+            $table->decimal('price', 10, 2);
             $table->string('image_url')->nullable();
             $table->string('product_url')->nullable();
-            $table->string('category_id')->required();
-            $table->string('quantity')->required();
+            $table->string('category_id');
+            $table->integer('quantity');
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->text('rejection_reason')->nullable();
             $table->timestamps();
         });
     }
