@@ -4,15 +4,28 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\UserResource;
+
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return User::paginate(5);
+        // Get authenticated user from request
+        $user = Auth::guard('sanctum')->user();
+
+        // If no user is authenticated or user is not an admin, return 404
+        if (!$user || !($user instanceof Admin)) {
+            abort(404);
+        }
+
+        // Return the list of users with pagination for admins
+        return UserResource::collection(User::paginate(10));
     }
 
     /**
@@ -32,25 +45,81 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        $user = auth()->user();
+        // Get authenticated user from Auth facade
+        $user = Auth::guard('sanctum')->user();
+
+        // If no user is authenticated, return 404
+        if (!$user) {
+            abort(404);
+        }
 
         // Check if the authenticated user is an admin
-        if ($user instanceof \App\Models\Admin) {
-            // Admin can view any user's data
-            $userData = \App\Models\User::find($id);
-        } else {
-            // Regular user can only view their own data
-            if ($user->id != $id) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
-            $userData = $user;
+        $isAdmin = $user instanceof Admin;
+        $isBusinessAccount = $user instanceof \App\Models\BusinessAccount;
+        $isSameUser = ($user instanceof User) && ($user->id == $id);
+
+        // Set up base query
+        $query = User::query();
+
+        // Load orders for admins and the user themselves
+        if ($isAdmin || $isSameUser) {
+            $query->with('orders');
         }
+
+        // Get the requested user
+        $userData = $query->find($id);
 
         if (!$userData) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
-        return response()->json($userData);
+        // Check authorization
+        if (!$isAdmin && !$isBusinessAccount && !$isSameUser && !($user instanceof User)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        // Build the response
+        $response = [
+            'id' => $userData->id,
+            'name' => $userData->name,
+            'image' => $userData->image ?? null,
+        ];
+
+        // Add additional data for admins, business accounts, the user themselves, or other regular users
+        if ($isAdmin || $isBusinessAccount || $isSameUser || ($user instanceof User)) {
+            $response = array_merge($response, [
+                'email' => $userData->email,
+                'bio' => $userData->bio ?? null,
+            ]);
+
+            // Include created_at and updated_at for admins and the user themselves
+            if ($isAdmin || $isSameUser) {
+                $response = array_merge($response, [
+                    'created_at' => $userData->created_at,
+                    'updated_at' => $userData->updated_at,
+                ]);
+            }
+
+            // Include orders data only for admins and the user themselves
+            if (($isAdmin || $isSameUser) && $userData->orders) {
+                if ($userData->orders->isEmpty()) {
+                    $response['orders_message'] = 'User has no orders.';
+                    $response['orders'] = [];
+                } else {
+                    $response['orders'] = $userData->orders->map(function($order) {
+                        return [
+                            'id' => $order->id,
+                            'total_price' => $order->total_price,
+                            'status' => $order->status,
+                            'created_at' => $order->created_at,
+                            'url' => route('orders.show', $order->id)
+                        ];
+                    });
+                }
+            }
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -103,7 +172,6 @@ class UserController extends Controller
             $user->update($updateData);
 
             return response()->json([
-                'user' => $user,
                 'message' => 'User updated successfully'
             ], 200);
         } catch (\Exception $e) {

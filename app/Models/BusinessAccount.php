@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BusinessAccount extends Authenticatable
 {
@@ -33,4 +34,12 @@ class BusinessAccount extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    /**
+     * Get the products for the business account.
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Products::class);
+    }
 }

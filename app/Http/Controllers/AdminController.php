@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Admin;
-use Illuminate\Container\Attributes\Auth;
+use App\Http\Resources\AdminResource;
 use Illuminate\Support\Facades\Hash;
+
 class AdminController extends Controller
 {
     protected $fillable = ['name', 'email', 'password'];
@@ -15,7 +16,7 @@ class AdminController extends Controller
      */
     public function index()
     {
-        return Admin::paginate(5);
+        return AdminResource::collection(Admin::paginate(10));
     }
 
     /**
@@ -30,6 +31,8 @@ class AdminController extends Controller
         $admin->image = $request->image;
         $admin->bio = $request->bio;
         $admin->save();
+
+        return new AdminResource($admin);
     }
 
     /**
@@ -37,8 +40,8 @@ class AdminController extends Controller
      */
     public function show(string $id)
     {
-        $admin = Admin::find($id);
-        return $admin;
+        $admin = Admin::findOrFail($id);
+        return new AdminResource($admin);
     }
 
     /**
@@ -46,13 +49,17 @@ class AdminController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $admin = Admin::find($id);
+        $admin = Admin::findOrFail($id);
         $admin->name = $request->name;
         $admin->email = $request->email;
-        $admin->password = Hash::make($request->password);
+        if ($request->has('password')) {
+            $admin->password = Hash::make($request->password);
+        }
         $admin->image = $request->image;
         $admin->bio = $request->bio;
         $admin->save();
+
+        return new AdminResource($admin);
     }
 
     /**
@@ -60,8 +67,9 @@ class AdminController extends Controller
      */
     public function destroy(string $id)
     {
-        $admin = Admin::find($id);
+        $admin = Admin::findOrFail($id);
         $admin->delete();
-        
+
+        return response()->json(['message' => 'Admin deleted successfully']);
     }
 }

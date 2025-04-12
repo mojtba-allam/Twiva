@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Categories;
 use App\Models\Admin;
+use Illuminate\Support\Facades\Auth;
 
 class ProductResource extends JsonResource
 {
@@ -18,30 +19,31 @@ class ProductResource extends JsonResource
     {
         // Fetch the category name based on the category_id
         $category = Categories::find($this->category_id);
-        $admin = Admin::find($this->admin_id);
 
-        return [
+        // Check if user is admin or the business that created this product
+        $user = Auth::guard('sanctum')->user();
+        $isAdmin = $user && $user instanceof Admin;
+        $isOwnerBusiness = $user && $user->id == $this->business_account_id;
+
+        // Build the response
+        $response = [
             'id' => $this->id,
             'title' => $this->title,
-            'description' => $this->description,
             'price' => $this->price,
-            'quantity' => $this->quantity,
             'image_url' => $this->image_url,
-            'category_id' => $this->category_id,
-            'business_account_id' => $this->business_account_id,
-            'status' => $this->status,
-            'rejection_reason' => $this->when($this->status === 'rejected', $this->rejection_reason),
             'url' => route('products.show', $this->id),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'category' => [
-                'name' => $this->whenLoaded('category', fn() => $this->category->name),
-                'url' => $this->whenLoaded('category', fn() => route('categories.show', $this->category_id))
-            ],
-            'business_account' => [
-                'name' => $this->whenLoaded('businessAccount', fn() => $this->businessAccount->name),
-                'url' => $this->whenLoaded('businessAccount', fn() => route('business.profile', $this->business_account_id))
-            ],
         ];
+
+        // Only show quantity to the business owner or admins
+        if ($isAdmin || $isOwnerBusiness) {
+            $response['quantity'] = $this->quantity;
+        }
+
+        // Show rejection reason when product is rejected
+        if ($this->status === 'rejected') {
+            $response['rejection_reason'] = $this->rejection_reason;
+        }
+
+        return $response;
     }
 }

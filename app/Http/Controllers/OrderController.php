@@ -310,7 +310,6 @@ class OrderController extends Controller
         if (!Auth::guard('user')->check()) {
             return response()->json([
                 'message' => 'Unauthorized. Please login to delete orders.',
-                'status' => 403
             ], 403);
         }
 

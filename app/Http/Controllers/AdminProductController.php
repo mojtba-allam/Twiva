@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Products;
+use App\Models\BusinessAccount;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Auth;
@@ -14,27 +15,50 @@ class AdminProductController extends Controller
 {
     public function pendingProducts(Request $request)
     {
-        // Check if user is authenticated
-        if (!Auth::guard('admin')->check() && !Auth::guard('sanctum')->check()) {
+        // Get the authenticated user
+        $user = Auth::guard('sanctum')->user();
+
+        // Check if user is admin
+        $isAdmin = $user && $user instanceof \App\Models\Admin;
+
+        // Check if user is a business account
+        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+
+        // If user is neither admin nor business, return 404
+        if (!$isAdmin && !$isBusiness) {
             throw new NotFoundHttpException();
         }
 
         // If admin, show all pending products
-        if (Auth::guard('admin')->check()) {
+        if ($isAdmin) {
             $products = Products::pending()
                 ->with(['businessAccount', 'category'])
                 ->paginate(10);
-        }
-        // If business account, show only their pending products
-        else {
-            $business = Auth::guard('sanctum')->user();
-            $products = Products::pending()
-                ->where('business_account_id', $business->id)
-                ->with(['category'])
-                ->paginate(10);
+
+            return response()->json([
+                'message' => 'Pending products retrieved successfully',
+                'data' => ProductResource::collection($products)
+            ]);
         }
 
-        return ProductResource::collection($products);
+        // If business account, show only their pending products
+        if ($isBusiness) {
+            $products = Products::pending()
+                ->where('business_account_id', $user->id)
+                ->with(['category'])
+                ->paginate(10);
+
+            // Check if this business has any pending products
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'You have no pending products',
+                ]);
+            }
+
+            return response()->json([
+                'data' => ProductResource::collection($products)
+            ]);
+        }
     }
 
     public function approveProduct(Request $request, $id)
@@ -58,7 +82,6 @@ class AdminProductController extends Controller
 
         return response()->json([
             'message' => 'Product approved successfully',
-            'product' => new ProductResource($product)
         ]);
     }
 

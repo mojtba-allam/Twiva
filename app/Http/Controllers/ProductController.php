@@ -88,7 +88,6 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product created successfully and pending admin approval',
-            'product' => new ProductResource($product),
         ], 201);
     }
 
@@ -108,7 +107,16 @@ class ProductController extends Controller
             }
         }
 
-        return new ProductResource($product);
+        // Get the basic product resource
+        $productResource = new ProductResource($product);
+        $productData = $productResource->toArray(request());
+
+        // Add additional fields for the detailed view
+        $productData['description'] = $product->description;
+        $productData['category_name'] = $product->category ? $product->category->name : null;
+        $productData['business_name'] = $product->businessAccount ? $product->businessAccount->name : null;
+
+        return response()->json($productData);
     }
 
 
@@ -150,7 +158,6 @@ class ProductController extends Controller
             $product->save();
 
             return response()->json([
-                'data' => $product,
 
                 'message' => 'Product updated successfully'], 200);
 

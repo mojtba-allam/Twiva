@@ -14,6 +14,23 @@ class AdminResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        // Get the current route path to determine context
+        $routePath = $request->path();
+
+        $data = [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'image' => $this->profile_picture,
+            // bio is intentionally excluded as requested
+        ];
+
+        // Only include profile_url when showing a collection (index)
+        // and not when showing a single admin detail
+        if (strpos($routePath, 'admins/index') !== false) {
+            $data['profile_url'] = url("/api/admins/{$this->id}");
+        }
+
+        return $data;
     }
 }

@@ -5,12 +5,15 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Admin;
 
 class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('sanctum')->user() && get_class(Auth::guard('sanctum')->user()) === 'App\Models\Admin') {
+        $user = Auth::guard('sanctum')->user();
+
+        if ($user && $user instanceof Admin) {
             return $next($request);
         }
 

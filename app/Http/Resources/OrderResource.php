@@ -24,11 +24,9 @@ class OrderResource extends JsonResource
                 'id' => $this->user_id,
                 'name' => optional($this->user)->name,
             ],
-            'status' => $this->status,
             'total_quantity' => $this->total_quantity,
             'total_price' => number_format($this->total_price, 2) . ' $',
-            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+            'status' => $this->status,
         ];
 
         // If this is a show request (single order), include full products details
@@ -50,7 +48,6 @@ class OrderResource extends JsonResource
                     'quantity' => $item['quantity'],
                     'unit_price' => number_format($product->price, 2) . ' $',
                     'subtotal' => number_format($product->price * $item['quantity'], 2) . ' $',
-                    'product_category' => optional($product->category)->name ?? 'Unknown Category',
                     'product_image' => $product->image_url,
                     'product_url' => $product->product_url
                 ];

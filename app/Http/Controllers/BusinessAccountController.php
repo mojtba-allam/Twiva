@@ -8,19 +8,20 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use App\Http\Resources\BusinessAccountResource;
 
 class BusinessAccountController extends Controller
 {
     public function index()
     {
-        $businessAccounts = BusinessAccount::all();
-        return response()->json($businessAccounts);
+        $businessAccounts = BusinessAccount::paginate(10);
+        return BusinessAccountResource::collection($businessAccounts);
     }
 
     public function store(Request $request)
     {
         $businessAccount = BusinessAccount::create($request->all());
-        return response()->json($businessAccount, 201);
+        return new BusinessAccountResource($businessAccount);
     }
 
     public function register(Request $request)
@@ -50,7 +51,6 @@ class BusinessAccountController extends Controller
 
         return response()->json([
             'message' => 'Business account created successfully',
-            'business' => $business,
             'token' => $token
         ], 201);
     }
@@ -74,26 +74,49 @@ class BusinessAccountController extends Controller
 
         return response()->json([
             'message' => 'Logged in successfully',
-            'business' => $business,
             'token' => $token
         ]);
     }
 
-    public function profile(Request $request)
+    public function profile(Request $request, $id)
     {
-        return response()->json($request->user());
+        // Check if request is from an admin
+        $user = auth()->guard('sanctum')->user();
+        $isAdmin = $user && $user instanceof \App\Models\Admin;
+
+        // Get the logged-in business account or find by ID if different
+        if ($request->user() && $request->user()->id == $id) {
+            $business = $request->user();
+        } else {
+            $business = BusinessAccount::findOrFail($id);
+        }
+
+        if ($isAdmin) {
+            // For admin, load all products without specifying admin relationship
+            $business->load('products');
+        } else {
+            // For non-admin, load only approved products
+            $business->load(['products' => function($query) {
+                $query->where('status', 'approved');
+            }]);
+        }
+
+        return new BusinessAccountResource($business);
     }
 
     public function updateProfile(Request $request)
     {
+        $business = $request->user('sanctum');
+        if (!$business || !($business instanceof BusinessAccount)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:business_accounts,email,' . $request->user()->id],
+            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:business_accounts,email,' . $business->id],
             'bio' => ['nullable', 'string'],
             'profile_picture' => ['nullable', 'image', 'max:2048'],
         ]);
-
-        $business = $request->user();
 
         if ($request->has('name')) {
             $business->name = $request->name;
@@ -116,16 +139,37 @@ class BusinessAccountController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'business' => $business
+            'business' => new BusinessAccountResource($business)
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $business = $request->user('sanctum');
+        if ($business && $business instanceof BusinessAccount) {
+            $business->tokens()->delete();
+            return response()->json(['message' => 'Logged out successfully']);
+        }
 
-        return response()->json([
-            'message' => 'Logged out successfully'
-        ]);
+        return response()->json(['message' => 'No active session found'], 400);
+    }
+
+    public function show($id)
+    {
+        // Check if request is from an admin
+        $user = auth()->guard('sanctum')->user();
+        $isAdmin = $user && $user instanceof \App\Models\Admin;
+
+        if ($isAdmin) {
+            // For admin, load all products without specifying admin relationship
+            $business = BusinessAccount::with('products')->findOrFail($id);
+        } else {
+            // For non-admin, load only approved products
+            $business = BusinessAccount::with(['products' => function($query) {
+                $query->where('status', 'approved');
+            }])->findOrFail($id);
+        }
+
+        return new BusinessAccountResource($business);
     }
 }

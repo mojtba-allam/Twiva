@@ -60,7 +60,6 @@ public function logout(Request $request)
     $request->user()->tokens()->delete();
 
     return response()->json([
-        'user' => $request->user(),
         'message' => 'Logged out successfully'
     ]);
 }

@@ -41,11 +41,43 @@ Route::middleware('auth:user')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+// User profile routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show'); //show one user
+});
+
+// Create new explicit admin routes
+Route::prefix('admins')->group(function () {
+    Route::post('/login', [AdminAuthController::class, 'login']); //login admin
+
+    // Allow any authenticated user to view admin listings and general admin features
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/index', [AdminController::class, 'index']); //show all admins
+        Route::get('/{id}', [AdminController::class, 'show']); //show one admin
+        Route::post('/logout', [AdminAuthController::class, 'logout']); //logout admin
+    });
+});
+
+Route::get('/business/index', [BusinessAccountController::class, 'index']);
+Route::get('/business/{id}', [BusinessAccountController::class, 'show'])->name('business.profile');
+Route::prefix('business')->group(function () {
+    Route::post('/register', [BusinessAccountController::class, 'register']);
+    Route::post('/login', [BusinessAccountController::class, 'login']);
+    Route::get('/profile/{id}', [BusinessAccountController::class, 'profile'])->name('api.business.profile');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/products/new', [ProductController::class, 'store']); //create a product
+        Route::patch('/products/{id}/edit', [ProductController::class, 'edit']); //edit a product
+        Route::put('/profile', [BusinessAccountController::class, 'updateProfile']);
+        Route::post('/logout', [BusinessAccountController::class, 'logout']);
+    });
+});
+
 // Admin routes
-Route::middleware('auth:admin')->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
+    // These routes should check for admin permission in their controller actions
     Route::get('/users', [UserController::class, 'index']); //show all users
     Route::put('/admins/{id}/edit', [AdminController::class, 'edit']); //edit admin
-    Route::post('/admins/logout', [AdminAuthController::class, 'logout']); //logout admin
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']); // Update order status
 
     // Admin Category Management
@@ -61,26 +93,6 @@ Route::middleware('auth:admin')->group(function () {
 
 // This route must come after /products/pending to avoid conflicts
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show'); //show one product
-
-Route::middleware(['auth:admin,user'])->group(function () {
-    Route::get('/admins/index', [AdminController::class, 'index']); //show all admins
-    Route::get('/admins/{id}', [AdminController::class, 'show']); //show all admins
-    Route::get('/users/{id}', [UserController::class, 'show']); //show one user
-});
-
-Route::prefix('business')->group(function () {
-    Route::get('/index', [BusinessAccountController::class, 'index']);
-    Route::post('/register', [BusinessAccountController::class, 'register']);
-    Route::post('/login', [BusinessAccountController::class, 'login']);
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/products/new', [ProductController::class, 'store']); //create a product
-        Route::patch('/products/{id}/edit', [ProductController::class, 'edit']); //edit a product
-        Route::get('/profile/{id}', [BusinessAccountController::class, 'profile'])->name('business.profile');
-        Route::put('/profile', [BusinessAccountController::class, 'updateProfile']);
-        Route::post('/logout', [BusinessAccountController::class, 'logout']);
-    });
-});
 
 
 

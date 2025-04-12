@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Categories;
+use App\Http\Resources\CategoryResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 class CategoriesController extends Controller
@@ -13,7 +14,7 @@ class CategoriesController extends Controller
      */
     public function index()
     {
-        return Categories::paginate(5);
+        return CategoryResource::collection(Categories::paginate(5));
     }
 
     /**
@@ -31,7 +32,7 @@ class CategoriesController extends Controller
         $category->created_at = now();
         $category->updated_at = now();
         $category->save();
-        return response()->json(['message' => 'Category created successfully'], 201);
+        return new CategoryResource($category);
     }
 
     /**
@@ -39,8 +40,28 @@ class CategoriesController extends Controller
      */
     public function show(string $id)
     {
-        $category = Categories::find($id);
-        return $category;
+        $isAdmin = Auth::guard('admin')->check();
+
+        if ($isAdmin) {
+            // Admin sees all products
+            $category = Categories::with('Products')->findOrFail($id);
+        } else {
+            // Regular users and business accounts see only approved products
+            $category = Categories::with(['Products' => function($query) {
+                $query->where('status', 'approved');
+            }])->findOrFail($id);
+        }
+
+        return new CategoryResource($category);
+    }
+
+    /**
+     * Display the specified resource for editing.
+     */
+    public function edit(string $id)
+    {
+        $category = Categories::findOrFail($id);
+        return new CategoryResource($category);
     }
 
     /**
@@ -48,26 +69,25 @@ class CategoriesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $category = Categories::find($id);
+        $category = Categories::findOrFail($id);
         $category->name = $request->name;
+        $category->updated_at = now();
         $category->save();
+        return new CategoryResource($category);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request ,string $id)
+    public function destroy(Request $request, string $id)
     {
         $admin = Auth::guard('admin')->user();
         try {
             $category = Categories::findOrFail($id);
             $category->delete();
-            return response()->json(['message' => 'Category deleted successfully'], 200);
-            } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Category deleted successfully']);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Category not found'], 404);
-            }
-            // if ($category->admin_id !== $admin->id) {
-            // return response()->json(['message' => 'Unauthorized'], 403);
-            // }
+        }
     }
 }

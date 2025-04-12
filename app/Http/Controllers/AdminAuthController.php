@@ -25,19 +25,20 @@ class AdminAuthController extends Controller
         $token = $admin->createToken('admin_auth_token')->plainTextToken;
 
         return response()->json([
-            'admin' => [
-                'id' => $admin->id,
-                'name' => $admin->name,
-                'email' => $admin->email
-            ],
             'message' => 'Admin login successful',
             'token' => $token
         ]);
     }
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
+        $user = $request->user();
 
-        return response()->json(['message' => 'Admin logged out successfully']);
+        // Check if the authenticated user is an Admin
+        if ($user instanceof \App\Models\Admin) {
+            $user->tokens()->delete();
+            return response()->json(['message' => 'Admin logged out successfully']);
+        }
+
+        return response()->json(['message' => 'Unauthorized. Only admins can log out through this endpoint.'], 403);
     }
 }
