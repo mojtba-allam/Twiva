@@ -92,8 +92,8 @@ class UserController extends Controller
                 'bio' => $userData->bio ?? null,
             ]);
 
-            // Include created_at and updated_at for admins and the user themselves
-            if ($isAdmin || $isSameUser) {
+            // Include created_at and updated_at for admins
+            if ($isAdmin) {
                 $response = array_merge($response, [
                     'created_at' => $userData->created_at,
                     'updated_at' => $userData->updated_at,
@@ -104,7 +104,6 @@ class UserController extends Controller
             if (($isAdmin || $isSameUser) && $userData->orders) {
                 if ($userData->orders->isEmpty()) {
                     $response['orders_message'] = 'User has no orders.';
-                    $response['orders'] = [];
                 } else {
                     $response['orders'] = $userData->orders->map(function($order) {
                         return [
