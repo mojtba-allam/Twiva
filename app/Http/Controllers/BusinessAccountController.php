@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use App\Http\Resources\BusinessAccountResource;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class BusinessAccountController extends Controller
 {
@@ -80,28 +81,34 @@ class BusinessAccountController extends Controller
 
     public function profile(Request $request, $id)
     {
-        // Check if request is from an admin
-        $user = auth()->guard('sanctum')->user();
-        $isAdmin = $user && $user instanceof \App\Models\Admin;
+        try {
+            // Check if request is from an admin
+            $user = auth()->guard('sanctum')->user();
+            $isAdmin = $user && $user instanceof \App\Models\Admin;
 
-        // Get the logged-in business account or find by ID if different
-        if ($request->user() && $request->user()->id == $id) {
-            $business = $request->user();
-        } else {
-            $business = BusinessAccount::findOrFail($id);
+            // Get the logged-in business account or find by ID if different
+            if ($request->user() && $request->user()->id == $id) {
+                $business = $request->user();
+            } else {
+                $business = BusinessAccount::findOrFail($id);
+            }
+
+            if ($isAdmin) {
+                // For admin, load all products without specifying admin relationship
+                $business->load('products');
+            } else {
+                // For non-admin, load only approved products
+                $business->load(['products' => function($query) {
+                    $query->where('status', 'approved');
+                }]);
+            }
+
+            return new BusinessAccountResource($business);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Business account not found'
+            ], 404);
         }
-
-        if ($isAdmin) {
-            // For admin, load all products without specifying admin relationship
-            $business->load('products');
-        } else {
-            // For non-admin, load only approved products
-            $business->load(['products' => function($query) {
-                $query->where('status', 'approved');
-            }]);
-        }
-
-        return new BusinessAccountResource($business);
     }
 
     public function updateProfile(Request $request)

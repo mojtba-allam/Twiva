@@ -44,6 +44,24 @@ class ProductResource extends JsonResource
             $response['rejection_reason'] = $this->rejection_reason;
         }
 
+        // Add category information if loaded
+        if ($this->relationLoaded('category') && $this->category) {
+            $response['category'] = [
+                'id' => $this->category->id,
+                'name' => $this->category->name
+            ];
+        }
+
+        // For pending products, show business information only to admins
+        if ($this->status === 'pending' && $isAdmin && $this->relationLoaded('businessAccount') && $this->businessAccount) {
+            $response['business'] = [
+                'id' => $this->businessAccount->id,
+                'name' => $this->businessAccount->name,
+                'image_url' => $this->businessAccount->image_url,
+                'url' => route('business.profile', $this->businessAccount->id)
+            ];
+        }
+
         return $response;
     }
 }

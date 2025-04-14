@@ -319,13 +319,25 @@ class OrderController extends Controller
         try {
             $user = Auth::guard('user')->user();
 
-            // Find the order and check if it belongs to the user
+            // First check if the order exists
+            $orderExists = Order::where('id', $id)->exists();
+            if (!$orderExists) {
+                return response()->json([
+                    'message' => 'Order not found',
+                    'status' => 404
+                ], 404);
+            }
+
+            // Then check if it belongs to the user
             $order = Order::where('id', $id)
                 ->where('user_id', $user->id)
                 ->first();
 
             if (!$order) {
-                throw new \Exception('Unauthorized. You do not have permission to delete this order.');
+                return response()->json([
+                    'message' => 'Unauthorized. You do not have permission to delete this order.',
+                    'status' => 403
+                ], 403);
             }
 
             // Return quantities back to products

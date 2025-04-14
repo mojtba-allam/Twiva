@@ -19,10 +19,10 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Product & category listing
 Route::get('/products/index', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/pending', [AdminProductController::class, 'pendingProducts'])->middleware('auth:sanctum');
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/categories', [CategoriesController::class, 'index']);
 Route::get('/categories/{id}', [CategoriesController::class, 'show'])->name('categories.show');
-Route::get('/products/pending', [AdminProductController::class, 'pendingProducts']);
 
 // Business account routes
 Route::get('/business/index', [BusinessAccountController::class, 'index']);

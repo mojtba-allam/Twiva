@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Models\Order;
+use App\Http\Resources\PendingProductResource;
 
 class AdminProductController extends Controller
 {
@@ -29,21 +30,20 @@ class AdminProductController extends Controller
             throw new NotFoundHttpException();
         }
 
-        // If admin, show all pending products
+        // If admin, show all pending products with business information
         if ($isAdmin) {
-            $products = Products::pending()
+            $products = Products::where('status', Products::STATUS_PENDING)
                 ->with(['businessAccount', 'category'])
                 ->paginate(10);
 
             return response()->json([
-                'message' => 'Pending products retrieved successfully',
                 'data' => ProductResource::collection($products)
             ]);
         }
 
-        // If business account, show only their pending products
+        // If business account, show only their pending products without business information
         if ($isBusiness) {
-            $products = Products::pending()
+            $products = Products::where('status', Products::STATUS_PENDING)
                 ->where('business_account_id', $user->id)
                 ->with(['category'])
                 ->paginate(10);

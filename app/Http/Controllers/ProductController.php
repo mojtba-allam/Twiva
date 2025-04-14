@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Products;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ProductResource;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+
 class ProductController extends Controller
 {
     /**
@@ -96,27 +98,33 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = Products::with(['category', 'businessAccount'])->findOrFail($id);
+        try {
+            $product = Products::with(['category', 'businessAccount'])->findOrFail($id);
 
-        if ($product->status !== Products::STATUS_APPROVED) {
-            $user = null;
-            $isAdmin = Auth::guard('admin')->check();
-            $isBusiness = Auth::guard('business')->check();
-            if (!$isAdmin && (!$isBusiness || Auth::guard('business')->user()->id !== $product->business_account_id)) {
-                return response()->json(['message' => 'Product not found'], 404);
+            if ($product->status !== Products::STATUS_APPROVED) {
+                $user = null;
+                $isAdmin = Auth::guard('admin')->check();
+                $isBusiness = Auth::guard('business')->check();
+                if (!$isAdmin && (!$isBusiness || Auth::guard('business')->user()->id !== $product->business_account_id)) {
+                    return response()->json(['message' => 'Product not found'], 404);
+                }
             }
+
+            // Get the basic product resource
+            $productResource = new ProductResource($product);
+            $productData = $productResource->toArray(request());
+
+            // Add additional fields for the detailed view
+            $productData['description'] = $product->description;
+            $productData['category_name'] = $product->category ? $product->category->name : null;
+            $productData['business_name'] = $product->businessAccount ? $product->businessAccount->name : null;
+
+            return response()->json($productData);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+            ], 404);
         }
-
-        // Get the basic product resource
-        $productResource = new ProductResource($product);
-        $productData = $productResource->toArray(request());
-
-        // Add additional fields for the detailed view
-        $productData['description'] = $product->description;
-        $productData['category_name'] = $product->category ? $product->category->name : null;
-        $productData['business_name'] = $product->businessAccount ? $product->businessAccount->name : null;
-
-        return response()->json($productData);
     }
 
 
@@ -146,20 +154,28 @@ class ProductController extends Controller
     }
 
     public function edit(Request $request, string $id){
+        try {
+            $product = Products::findOrFail($id);
 
-            $product = Products::find($id);
-            if(!$product){
-                return response()->json(['message' => 'Product not found'], 404);
+            // Check if the authenticated business account is the owner of the product
+            $business = Auth::guard('business')->user();
+            if (!$business || $business->id !== $product->business_account_id) {
+                return response()->json([
+                    'message' => 'Unauthorized. You can only edit your own products.'
+                ], 403);
             }
 
-
-            $updateData = $request->only(['title', 'description', 'price', 'quantity', 'image_url','admin_id','category_id']);
+            $updateData = $request->only(['title', 'description', 'price', 'quantity', 'image_url', 'category_id']);
             $product->update($updateData);
             $product->save();
 
             return response()->json([
-
-                'message' => 'Product updated successfully'], 200);
-
+                'message' => 'Product updated successfully'
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
     }
 }

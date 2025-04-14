@@ -40,19 +40,25 @@ class CategoriesController extends Controller
      */
     public function show(string $id)
     {
-        $isAdmin = Auth::guard('admin')->check();
+        try {
+            $isAdmin = Auth::guard('admin')->check();
 
-        if ($isAdmin) {
-            // Admin sees all products
-            $category = Categories::with('Products')->findOrFail($id);
-        } else {
-            // Regular users and business accounts see only approved products
-            $category = Categories::with(['Products' => function($query) {
-                $query->where('status', 'approved');
-            }])->findOrFail($id);
+            if ($isAdmin) {
+                // Admin sees all products
+                $category = Categories::with('Products')->findOrFail($id);
+            } else {
+                // Regular users and business accounts see only approved products
+                $category = Categories::with(['Products' => function($query) {
+                    $query->where('status', 'approved');
+                }])->findOrFail($id);
+            }
+
+            return new CategoryResource($category);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found',
+            ], 404);
         }
-
-        return new CategoryResource($category);
     }
 
     /**
@@ -60,8 +66,14 @@ class CategoriesController extends Controller
      */
     public function edit(string $id)
     {
-        $category = Categories::findOrFail($id);
-        return new CategoryResource($category);
+        try {
+            $category = Categories::findOrFail($id);
+            return new CategoryResource($category);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found'
+            ], 404);
+        }
     }
 
     /**

@@ -18,12 +18,15 @@ class CategoryResource extends JsonResource
     {
         $isShowRoute = $request->route()->getName() === 'categories.show';
 
-        return [
+        $response = [
             'id' => $this->id,
             'name' => $this->name,
             'url' => route('categories.show', $this->id),
-            'products' => $this->when($isShowRoute && $this->Products, function() {
-                return $this->Products->map(function($product) {
+        ];
+
+        if ($isShowRoute) {
+            if ($this->Products && $this->Products->isNotEmpty()) {
+                $response['products'] = $this->Products->map(function($product) {
                     return [
                         'name' => $product->title,
                         'price' => $product->price,
@@ -31,7 +34,11 @@ class CategoryResource extends JsonResource
                         'product_url' => route('products.show', $product->id)
                     ];
                 });
-            }),
-        ];
+            } else {
+                $response['message'] = 'This category has no products yet';
+            }
+        }
+
+        return $response;
     }
 }
