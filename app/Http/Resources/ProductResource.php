@@ -32,6 +32,7 @@ class ProductResource extends JsonResource
             'price' => $this->price,
             'image_url' => $this->image_url,
             'url' => route('products.show', $this->id),
+            'status' => $this->status
         ];
 
         // Only show quantity to the business owner or admins
@@ -39,9 +40,10 @@ class ProductResource extends JsonResource
             $response['quantity'] = $this->quantity;
         }
 
-        // Show rejection reason when product is rejected
-        if ($this->status === 'rejected') {
+        // Show rejection reason when product is rejected and user is admin or owner
+        if ($this->status === 'rejected' && ($isAdmin || $isOwnerBusiness)) {
             $response['rejection_reason'] = $this->rejection_reason;
+            $response['rejected_at'] = $this->updated_at;
         }
 
         // Add category information if loaded
@@ -52,13 +54,13 @@ class ProductResource extends JsonResource
             ];
         }
 
-        // For pending products, show business information only to admins
-        if ($this->status === 'pending' && $isAdmin && $this->relationLoaded('businessAccount') && $this->businessAccount) {
+        // For rejected products, show business information only to admins
+        if ($isAdmin && $this->relationLoaded('businessAccount') && $this->businessAccount) {
             $response['business'] = [
                 'id' => $this->businessAccount->id,
                 'name' => $this->businessAccount->name,
                 'image_url' => $this->businessAccount->image_url,
-                'url' => route('business.profile', $this->businessAccount->id)
+                'profile_url' => route('business.profile', $this->businessAccount->id)
             ];
         }
 

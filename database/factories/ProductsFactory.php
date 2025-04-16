@@ -31,13 +31,4 @@ class ProductsFactory extends Factory
             'category_id' => Categories::factory(),
         ];
     }
-
-    public function configure()
-    {
-        return $this->afterCreating(function ($product) {
-            $product->update([
-                'product_url' => url("/products/{$product->id}")
-            ]);
-        });
-    }
 }

@@ -11,9 +11,18 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Models\Order;
 use App\Http\Resources\PendingProductResource;
+use App\Services\NotificationService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AdminProductController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     public function pendingProducts(Request $request)
     {
         // Get the authenticated user
@@ -61,141 +70,262 @@ class AdminProductController extends Controller
         }
     }
 
-    public function approveProduct(Request $request, $id)
+    public function approveProduct($id)
     {
-        // Only admin can approve products
-        if (!Auth::guard('admin')->check()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        try {
+            $product = Products::findOrFail($id);
 
-        $product = Products::findOrFail($id);
+            if ($product->status !== Products::STATUS_PENDING) {
+                return response()->json([
+                    'message' => 'Only pending products can be approved'
+                ], 400);
+            }
 
-        if ($product->status === Products::STATUS_APPROVED) {
+            $product->status = Products::STATUS_APPROVED;
+            $product->save();
+
+            // Notify business about product approval
+            $this->notificationService->notifyBusiness(
+                $product->businessAccount,
+                'product_approved',
+                'Product Approved',
+                "Your product '{$product->title}' has been approved",
+                [
+                    'product_id' => $product->id,
+                    'business_account_id' => $product->business_account_id
+                ]
+            );
+
             return response()->json([
-                'message' => 'Product is already approved'
-            ], 400);
+                'message' => 'Product approved successfully',
+                'product' => new ProductResource($product)
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
         }
-
-        $product->status = Products::STATUS_APPROVED;
-        $product->rejection_reason = null;
-        $product->save();
-
-        return response()->json([
-            'message' => 'Product approved successfully',
-        ]);
     }
 
     public function rejectProduct(Request $request, $id)
     {
-        // Only admin can reject products
-        if (!Auth::guard('admin')->check()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        try {
+            $product = Products::findOrFail($id);
 
-        $request->validate([
-            'rejection_reason' => 'required|string|max:500'
-        ]);
+            if ($product->status !== Products::STATUS_PENDING) {
+                return response()->json([
+                    'message' => 'Only pending products can be rejected'
+                ], 400);
+            }
 
-        $product = Products::findOrFail($id);
+            $request->validate([
+                'rejection_reason' => 'required|string|max:500'
+            ]);
 
-        if ($product->status === Products::STATUS_REJECTED) {
+            $product->status = Products::STATUS_REJECTED;
+            $product->rejection_reason = $request->rejection_reason;
+            $product->save();
+
+            // Notify business about product rejection
+            $this->notificationService->notifyBusiness(
+                $product->businessAccount,
+                'product_rejected',
+                'Product Rejected',
+                "Your product '{$product->title}' has been rejected. Reason: {$request->rejection_reason}",
+                [
+                    'product_id' => $product->id,
+                    'business_account_id' => $product->business_account_id
+                ]
+            );
+
             return response()->json([
-                'message' => 'Product is already rejected'
-            ], 400);
-        }
-
-        $product->status = Products::STATUS_REJECTED;
-        $product->rejection_reason = $request->rejection_reason;
-        $product->save();
-
-        return response()->json([
-            'message' => 'Product rejected successfully',
-            'product' => new ProductResource($product)
-        ]);
-    }
-
-    public function deleteProduct(Request $request, $id)
-    {
-        // Check if admin is authenticated
-        if (!Auth::guard('admin')->check()) {
+                'message' => 'Product rejected successfully',
+            ]);
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Unauthorized. Only admins can delete products.',
-                'status' => 403
-            ], 403);
-        }
-
-        // Find the product
-        $product = Products::find($id);
-
-        if (!$product) {
-            return response()->json([
-                'message' => 'Product not found.',
-                'status' => 404
+                'message' => 'Product not found'
             ], 404);
         }
+    }
 
-        // Begin transaction
-        DB::beginTransaction();
-
+    public function deleteProduct($id)
+    {
         try {
-            // Find all orders containing this product
-            $orders = Order::whereRaw("JSON_CONTAINS(products_list, JSON_OBJECT('product_id', ?))", [$id])->get();
+            // Find the product
+            $product = Products::findOrFail($id);
+            $productTitle = $product->title;
 
-            foreach ($orders as $order) {
-                // Decode the products list
+            // Get all orders from the database
+            $allOrders = Order::all();
+            $orders = collect();
+
+            // Manually filter orders that contain this product
+            foreach ($allOrders as $order) {
                 $products_list = json_decode($order->products_list, true);
-
-                // Remove the product from the list
-                $products_list = array_filter($products_list, function($item) use ($id) {
-                    return $item['product_id'] != $id;
-                });
-
-                // Recalculate total quantity and price
-                $total_quantity = 0;
-                $total_price = 0;
-
-                foreach ($products_list as $item) {
-                    $product = Products::find($item['product_id']);
-                    if ($product) {
-                        $total_quantity += $item['quantity'];
-                        $total_price += $product->price * $item['quantity'];
-                    }
+                if (!is_array($products_list)) {
+                    continue;
                 }
 
-                // If no products left, delete the order
-                if (empty($products_list)) {
-                    $order->delete();
-                } else {
-                    // Update the order with new calculations
-                    $order->update([
-                        'products_list' => json_encode(array_values($products_list)),
-                        'total_quantity' => $total_quantity,
-                        'total_price' => $total_price
-                    ]);
+                foreach ($products_list as $item) {
+                    if ((string)($item['product_id'] ?? '') === (string)$id) {
+                        $orders->push($order);
+                        break;
+                    }
                 }
             }
 
-            // Delete the product
-            $product->delete();
+            // Process each affected order
+            foreach ($orders as $order) {
+                $products_list = json_decode($order->products_list, true);
+                $deleted_products = [];
+                $total_quantity = 0;
+                $total_price = 0;
 
-            // Commit transaction
-            DB::commit();
+                // Update each product in the list
+                foreach ($products_list as $key => $item) {
+                    if ((string)($item['product_id'] ?? '') === (string)$id) {
+                        // Mark the product as deleted but keep it in the list
+                        $products_list[$key]['deleted'] = true;
+                        $products_list[$key]['product_title'] = $product->title;
+
+                        // Add to deleted products for notification
+                        $deleted_products[] = [
+                            'product_id' => $id,
+                            'product_title' => $product->title,
+                            'quantity' => $item['quantity'],
+                            'price' => $product->price // Use the product's current price
+                        ];
+                    } else {
+                        // Only count non-deleted products in totals
+                        $total_quantity += $item['quantity'];
+                        // Make sure we have a valid price
+                        $itemPrice = isset($item['price']) ? $item['price'] : 0;
+                        if ($itemPrice == 0 && isset($item['product_id'])) {
+                            $productItem = Products::find($item['product_id']);
+                            if ($productItem) {
+                                $itemPrice = $productItem->price;
+                            }
+                        }
+                        $total_price += ($itemPrice * $item['quantity']);
+                    }
+                }
+
+                // Update the order with the modified products_list (keeping deleted products)
+                $order->update([
+                    'products_list' => json_encode($products_list),
+                    'total_quantity' => $total_quantity,
+                    'total_price' => $total_price
+                ]);
+
+                // Notify users about deleted products in their orders
+                if (!empty($deleted_products)) {
+                    $user = \App\Models\User::find($order->user_id);
+                    if ($user) {
+                        $this->notificationService->notifyUser(
+                            $user,
+                            'product_deleted',
+                            'Product Removed from Order',
+                            "Product '{$product->title}' has been removed from your order #{$order->id}",
+                            [
+                                'order_id' => $order->id,
+                                'product_id' => $id,
+                                'deleted_products' => $deleted_products
+                            ]
+                        );
+                    }
+                }
+            }
+
+            // Update product status to 'deleted' instead of deleting it
+            $product->update([
+                'status' => Products::STATUS_DELETED,
+                'quantity' => 0  // Set quantity to 0 since it's no longer available
+            ]);
+
+            // Notify the business account about the product deletion
+            if ($product->business_account_id) {
+                $businessAccount = \App\Models\BusinessAccount::find($product->business_account_id);
+                if ($businessAccount) {
+                    $this->notificationService->notifyBusiness(
+                        $businessAccount,
+                        'product_deleted',
+                        'Product Deleted',
+                        "Your product '{$productTitle}' has been deleted by an admin",
+                        [
+                            'product_id' => $product->id,
+                            'business_account_id' => $product->business_account_id
+                        ]
+                    );
+                }
+            }
 
             return response()->json([
-                'message' => 'Product deleted successfully. Affected orders have been updated.',
+                'message' => 'Product marked as deleted successfully. Affected orders have been updated.',
                 'affected_orders_count' => $orders->count(),
                 'status' => 200
             ], 200);
 
         } catch (\Exception $e) {
-            // Rollback transaction in case of error
-            DB::rollback();
-
             return response()->json([
                 'message' => 'Failed to delete product. Please try again.',
                 'error' => $e->getMessage(),
                 'status' => 500
             ], 500);
         }
+    }
+
+    public function rejectedProducts(Request $request)
+    {
+        // Get the authenticated user
+        $user = Auth::guard('sanctum')->user();
+
+        // Check if user is admin
+        $isAdmin = $user && $user instanceof \App\Models\Admin;
+
+        // Check if user is a business account
+        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+
+        // If user is neither admin nor business, return 404
+        if (!$isAdmin && !$isBusiness) {
+            throw new NotFoundHttpException();
+        }
+
+        // If admin, show all rejected products with business information
+        if ($isAdmin) {
+            $products = Products::where('status', Products::STATUS_REJECTED)
+                ->with(['businessAccount', 'category'])
+                ->paginate(10);
+
+            return response()->json([
+                'data' => ProductResource::collection($products)
+            ]);
+        }
+
+        // If business account, show only their rejected products
+        if ($isBusiness) {
+            $products = Products::where('status', Products::STATUS_REJECTED)
+                ->where('business_account_id', $user->id)
+                ->with(['category'])
+                ->paginate(10);
+
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'You have no rejected products',
+                ]);
+            }
+
+            return response()->json([
+                'data' => ProductResource::collection($products)
+            ]);
+        }
+    }
+
+    public function index()
+    {
+        $products = Products::with('businessAccount')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return ProductResource::collection($products);
     }
 }

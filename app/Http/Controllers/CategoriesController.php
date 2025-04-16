@@ -61,31 +61,31 @@ class CategoriesController extends Controller
         }
     }
 
+
+
     /**
-     * Display the specified resource for editing.
+     * Edit the specified resource in storage.
      */
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
         try {
+            $request->validate([
+                'name' => 'required|string|max:255'
+            ]);
+
             $category = Categories::findOrFail($id);
-            return new CategoryResource($category);
+            $category->name = $request->name;
+            $category->updated_at = now();
+            $category->save();
+
+            return response()->json([
+                'message' => 'Category updated successfully',
+            ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Category not found'
             ], 404);
         }
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $category = Categories::findOrFail($id);
-        $category->name = $request->name;
-        $category->updated_at = now();
-        $category->save();
-        return new CategoryResource($category);
     }
 
     /**

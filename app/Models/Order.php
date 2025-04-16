@@ -16,7 +16,8 @@ class Order extends Model
         'products_list',
         'total_quantity',
         'total_price',
-        'status'
+        'status',
+        'deleted_products'
     ];
 
     public function Products(): HasMany

@@ -8,16 +8,25 @@ use App\Models\Products;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ProductResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Services\NotificationService;
 
 class ProductController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Display a listing of the resource.
      */
 
     public function index(Request $request)
     {
-        $query = Products::approved();
+        $query = Products::where('status', 'approved')
+            ->where('quantity', '>', 0);
 
         // Search by title
         if ($request->has('search')) {
@@ -83,10 +92,30 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
         ]);
 
+        $user = Auth::guard('sanctum')->user();
+        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+
+        if (!$isBusiness) {
+            return response()->json([
+                'message' => 'Unauthorized. Only business accounts can create products.'
+            ], 403);
+        }
+
         $product = new Products($validatedData);
-        $product->business_account_id = Auth::guard('business')->user()->id;
+        $product->business_account_id = $user->id;
         $product->status = Products::STATUS_PENDING;
         $product->save();
+
+        // Notify admins about new product
+        $this->notificationService->notifyAdmins(
+            'new_product',
+            'New Product Added',
+            "A new product '{$product->title}' has been added and needs approval",
+            [
+                'product_id' => $product->id,
+                'business_account_id' => $product->business_account_id
+            ]
+        );
 
         return response()->json([
             'message' => 'Product created successfully and pending admin approval',
@@ -157,20 +186,44 @@ class ProductController extends Controller
         try {
             $product = Products::findOrFail($id);
 
-            // Check if the authenticated business account is the owner of the product
-            $business = Auth::guard('business')->user();
-            if (!$business || $business->id !== $product->business_account_id) {
+            // Check if the authenticated user is a business account and is the owner of the product
+            $user = Auth::guard('sanctum')->user();
+            $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+
+            if (!$isBusiness || $user->id !== $product->business_account_id) {
                 return response()->json([
                     'message' => 'Unauthorized. You can only edit your own products.'
                 ], 403);
             }
 
             $updateData = $request->only(['title', 'description', 'price', 'quantity', 'image_url', 'category_id']);
+
+            // If the product was previously approved, set it back to pending
+            if ($product->status === Products::STATUS_APPROVED) {
+                $updateData['status'] = Products::STATUS_PENDING;
+                $updateData['rejection_reason'] = null; // Clear any previous rejection reason
+
+                // Notify admins about edited product
+                $this->notificationService->notifyAdmins(
+                    'product_edited',
+                    'Product Edited',
+                    "Product '{$product->title}' has been edited and needs approval",
+                    [
+                        'product_id' => $product->id,
+                        'business_account_id' => $product->business_account_id
+                    ]
+                );
+            }
+
             $product->update($updateData);
             $product->save();
 
+            $message = $product->status === Products::STATUS_PENDING
+                ? 'Product updated successfully and is pending admin approval'
+                : 'Product updated successfully';
+
             return response()->json([
-                'message' => 'Product updated successfully'
+                'message' => $message
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([

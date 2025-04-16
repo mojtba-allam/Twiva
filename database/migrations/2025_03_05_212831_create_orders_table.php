@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('total_quantity')->required();
             $table->decimal('total_price', 10, 2)->required();
             $table->string('status')->required();
+            $table->json('deleted_products')->nullable();
             $table->timestamps();
         });
     }

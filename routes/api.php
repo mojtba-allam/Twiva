@@ -11,6 +11,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\BusinessAccountController;
 use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\NotificationController;
 
 // Public routes - no authentication required
 // User authentication
@@ -20,6 +21,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // Product & category listing
 Route::get('/products/index', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/pending', [AdminProductController::class, 'pendingProducts'])->middleware('auth:sanctum');
+Route::get('/products/rejected', [AdminProductController::class, 'rejectedProducts'])->middleware('auth:sanctum');
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/categories', [CategoriesController::class, 'index']);
 Route::get('/categories/{id}', [CategoriesController::class, 'show'])->name('categories.show');
@@ -83,6 +85,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/products/{id}/approve', [AdminProductController::class, 'approveProduct']);
     Route::post('/products/{id}/reject', [AdminProductController::class, 'rejectProduct']);
     Route::delete('/products/{id}/delete', [AdminProductController::class, 'deleteProduct']);
+
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
 });
 
 

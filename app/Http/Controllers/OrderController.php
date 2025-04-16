@@ -12,9 +12,17 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OrderResource;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class OrderController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -60,9 +68,10 @@ class OrderController extends Controller
             ], 404);
         }
 
+        // Validate request structure
         $request->validate([
             'products_list' => 'required|array',
-            'products_list.*.product_id' => 'required|exists:products,id',
+            'products_list.*.product_id' => 'required|integer',
             'products_list.*.quantity' => 'required|integer|min:1',
             'status' => 'required|string'
         ]);
@@ -71,63 +80,98 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
-            // Get the products list from request
-            $products_list = $request->products_list;
+            // Get products and validate quantities
+            $products_list = [];
+            $total_quantity = 0;
+            $total_price = 0;
+            $errors = [];
 
-            // Fetch all products and check quantities
-            $products = Products::whereIn('id', collect($products_list)->pluck('product_id'))
-                ->where('status', 'approved')  // Only allow approved products
-                ->get();
+            foreach ($request->products_list as $index => $item) {
+                try {
+                    $product = Products::findOrFail($item['product_id']);
 
-            // Verify all products exist and are approved
-            $requestedIds = collect($products_list)->pluck('product_id');
-            $foundIds = $products->pluck('id');
-            $missingIds = $requestedIds->diff($foundIds);
+                    // Check if product is approved
+                    if ($product->status !== 'approved') {
+                        $errors[] = "Product '{$product->title}' is not available for ordering (Status: {$product->status})";
+                        continue;
+                    }
 
-            if ($missingIds->isNotEmpty()) {
-                throw new \Exception("Some products are not available or not approved: " . $missingIds->join(', '));
-            }
+                    if ($product->quantity < $item['quantity']) {
+                        $errors[] = "Insufficient quantity for product '{$product->title}'. Available: {$product->quantity}, Requested: {$item['quantity']}";
+                        continue;
+                    }
 
-            // Verify product availability and quantities
-            foreach ($products_list as $item) {
-                $product = $products->firstWhere('id', $item['product_id']);
-                if ($product->quantity < $item['quantity']) {
-                    throw new \Exception("Insufficient quantity available for product: {$product->title}");
+                    $products_list[] = [
+                        'product_id' => $product->id,
+                        'product_title' => $product->title,
+                        'quantity' => $item['quantity'],
+                        'price' => $product->price
+                    ];
+
+                    $total_quantity += $item['quantity'];
+                    $total_price += ($product->price * $item['quantity']);
+                } catch (ModelNotFoundException $e) {
+                    // Try to get the product title from the database even if it's deleted
+                    $deletedProduct = DB::table('products')
+                        ->where('id', $item['product_id'])
+                        ->first();
+
+                    if ($deletedProduct) {
+                        $errors[] = "Product '{$deletedProduct->title}' is no longer available";
+                    } else {
+                        $errors[] = "Product with ID {$item['product_id']} does not exist";
+                    }
                 }
             }
 
-            // Calculate total price
-            $total_price = $products->sum(function ($product) use ($products_list) {
-                $quantity = collect($products_list)
-                    ->firstWhere('product_id', $product->id)['quantity'];
-                return $product->price * $quantity;
-            });
+            // If there are any errors, return them
+            if (!empty($errors)) {
+                return response()->json([
+                    'message' => 'Order validation failed',
+                    'errors' => $errors
+                ], 422);
+            }
 
             // Create the order
             $order = Order::create([
                 'user_id' => $user->id,
                 'products_list' => json_encode($products_list),
-                'total_quantity' => collect($products_list)->sum('quantity'),
+                'total_quantity' => $total_quantity,
                 'total_price' => $total_price,
                 'status' => $request->status
             ]);
 
             // Update product quantities
             foreach ($products_list as $item) {
-                $product = $products->firstWhere('id', $item['product_id']);
+                $product = Products::findOrFail($item['product_id']);
                 $product->quantity -= $item['quantity'];
                 $product->save();
             }
 
+            // Notify admins about the new order
+            $this->notificationService->notifyAdmins(
+                'new_order',
+                'New Order Placed',
+                "User {$user->name} has placed a new order with ID #{$order->id}",
+                [
+                    'order_id' => $order->id,
+                    'user_id' => $user->id,
+                    'total_price' => $total_price
+                ]
+            );
+
             DB::commit();
 
-            return new OrderResource($order);
+            return response()->json([
+                'message' => 'Order created successfully! Your order has been placed and is being processed.',
+                'status' => 201
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
-                'message' => $e->getMessage(),
-                'status' => 422
+                'message' => 'Failed to create order',
+                'error' => $e->getMessage()
             ], 422);
         }
     }
@@ -259,6 +303,18 @@ class OrderController extends Controller
             foreach ($products as $product) {
                 $product->save();
             }
+
+            // Notify admins about the order update
+            $this->notificationService->notifyAdmins(
+                'order_updated',
+                'Order Updated',
+                "User {$user->name} has updated order #{$order->id}",
+                [
+                    'order_id' => $order->id,
+                    'user_id' => $user->id,
+                    'total_price' => $total_price
+                ]
+            );
 
             DB::commit();
 

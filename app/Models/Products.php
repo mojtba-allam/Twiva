@@ -27,6 +27,7 @@ class Products extends Model
     const STATUS_PENDING = 'pending';
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';
+    const STATUS_DELETED = 'deleted';
 
     // Scope for approved products only
     public function scopeApproved($query)

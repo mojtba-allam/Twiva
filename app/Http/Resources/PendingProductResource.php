@@ -32,7 +32,13 @@ class PendingProductResource extends JsonResource
                     'id' => $this->category->id,
                     'name' => $this->category->name
                 ];
-            })
+            }),
+            'business' => [
+                'id' => $this->businessAccount->id,
+                'name' => $this->businessAccount->name,
+                'image_url' => $this->businessAccount->image_url,
+                'url' => route('business.profile', $this->businessAccount->id)
+            ]
         ];
 
         // Additional information for admin only
