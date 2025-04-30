@@ -75,6 +75,7 @@ class BusinessAccountController extends Controller
 
         return response()->json([
             'message' => 'Logged in successfully',
+            'id' => $business->id,
             'token' => $token
         ]);
     }
@@ -103,7 +104,15 @@ class BusinessAccountController extends Controller
                 }]);
             }
 
-            return new BusinessAccountResource($business);
+            $businessData = new BusinessAccountResource($business)->toArray($request);
+
+            // Check if products exist
+            if (empty($businessData['data']['products'])) {
+                $businessData['products'] = "No products available yet.";
+            }
+
+            return response()->json($businessData);
+
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Business account not found'
@@ -122,7 +131,7 @@ class BusinessAccountController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:business_accounts,email,' . $business->id],
             'bio' => ['nullable', 'string'],
-            'profile_picture' => ['nullable', 'image', 'max:2048'],
+            'profile_picture' => ['nullable', 'string'], // Changed to accept string URLs
         ]);
 
         if ($request->has('name')) {
@@ -137,16 +146,18 @@ class BusinessAccountController extends Controller
             $business->bio = $request->bio;
         }
 
+        // Handle both URL and file upload for profile picture
         if ($request->hasFile('profile_picture')) {
             $path = $request->file('profile_picture')->store('profile-pictures', 'public');
             $business->profile_picture = $path;
+        } elseif ($request->has('profile_picture')) {
+            $business->profile_picture = $request->profile_picture;
         }
 
         $business->save();
 
         return response()->json([
-            'message' => 'Profile updated successfully',
-            'business' => new BusinessAccountResource($business)
+            'message' => 'Profile updated successfully'
         ]);
     }
 
@@ -178,5 +189,46 @@ class BusinessAccountController extends Controller
         }
 
         return new BusinessAccountResource($business);
+    }
+
+    public function myProducts(Request $request)
+    {
+        try {
+            $business = $request->user('sanctum');
+            
+            if (!$business || !($business instanceof BusinessAccount)) {
+                return response()->json([
+                    'message' => 'Unauthorized. Please login as a business account.'
+                ], 403);
+            }
+
+            $products = $business->products()
+                ->select('id', 'title', 'image_url', 'status')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'title' => $product->title,
+                        'image' => $product->image_url,
+                        'status' => $product->status,
+                        'url' => url("/api/products/{$product->id}")
+                    ];
+                });
+
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'You have no products yet.'
+                ]);
+            }
+
+            return response()->json([
+                'data' => $products
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving products'
+            ], 500);
+        }
     }
 }

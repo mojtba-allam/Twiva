@@ -40,8 +40,15 @@ class AdminController extends Controller
      */
     public function show(string $id)
     {
-        $admin = Admin::findOrFail($id);
-        return new AdminResource($admin);
+        try {
+            $admin = Admin::findOrFail($id);
+            return new AdminResource($admin);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Admin not found',
+                'status' => 404
+            ], 404);
+        }
     }
 
     /**
@@ -49,17 +56,24 @@ class AdminController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $admin = Admin::findOrFail($id);
-        $admin->name = $request->name;
-        $admin->email = $request->email;
-        if ($request->has('password')) {
-            $admin->password = Hash::make($request->password);
-        }
-        $admin->image = $request->image;
-        $admin->bio = $request->bio;
-        $admin->save();
+        try {
+            $admin = Admin::findOrFail($id);
+            $admin->name = $request->name;
+            $admin->email = $request->email;
+            if ($request->has('password')) {
+                $admin->password = Hash::make($request->password);
+            }
+            $admin->image = $request->image;
+            $admin->bio = $request->bio;
+            $admin->save();
 
-        return new AdminResource($admin);
+            return new AdminResource($admin);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Admin not found',
+                'status' => 404
+            ], 404);
+        }
     }
 
     /**
@@ -67,9 +81,16 @@ class AdminController extends Controller
      */
     public function destroy(string $id)
     {
-        $admin = Admin::findOrFail($id);
-        $admin->delete();
+        try {
+            $admin = Admin::findOrFail($id);
+            $admin->delete();
 
-        return response()->json(['message' => 'Admin deleted successfully']);
+            return response()->json(['message' => 'Admin deleted successfully']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Admin not found',
+                'status' => 404
+            ], 404);
+        }
     }
 }

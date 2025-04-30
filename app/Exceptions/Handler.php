@@ -36,15 +36,27 @@ class Handler extends ExceptionHandler
                     'status' => 404
                 ], 404);
             }
+            
+            // For web routes, return the 404 view
+            return response()->view('errors.404', [], 404);
         });
 
         $this->renderable(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'message' => 'Unauthenticated.',
-                    'status' => 401
-                ], 401);
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Unauthenticated.',
+                        'status' => 401
+                    ], 401);
+                }
+                
+                // If it's an API request but doesn't expect JSON (like browser request)
+                if ($request->is('api/admins/*')) {
+                    return redirect()->route('admin.login');
+                }
             }
+            
+            return redirect()->guest(route('admin.login'));
         });
     }
 }

@@ -264,6 +264,30 @@ class OrderController extends Controller
                 ->unique();
             $products = Products::whereIn('id', $product_ids)->get();
 
+            // Validate product status and quantities
+            $errors = [];
+            foreach ($new_products_list as $item) {
+                $product = $products->firstWhere('id', $item['product_id']);
+                if (!$product) {
+                    $errors[] = "Product {$item['product_id']} not found";
+                    continue;
+                }
+
+                // Add status validation
+                if ($product->status !== 'approved') {
+                    $errors[] = "Product '{$product->title}' is not available for ordering (Status: {$product->status})";
+                    continue;
+                }
+            }
+
+            // If there are any errors, return them
+            if (!empty($errors)) {
+                return response()->json([
+                    'message' => 'Order validation failed',
+                    'errors' => $errors
+                ], 422);
+            }
+
             // First, return quantities from old order back to products
             foreach ($old_products_list as $item) {
                 $product = $products->firstWhere('id', $item['product_id']);
@@ -275,14 +299,9 @@ class OrderController extends Controller
             // Then, check and deduct new quantities
             foreach ($new_products_list as $item) {
                 $product = $products->firstWhere('id', $item['product_id']);
-                if (!$product) {
-                    throw new \Exception("Product {$item['product_id']} not found");
-                }
-
                 if ($product->quantity < $item['quantity']) {
                     throw new \Exception("Insufficient quantity available for product: {$product->title}");
                 }
-
                 $product->quantity -= $item['quantity'];
             }
 
@@ -319,7 +338,7 @@ class OrderController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Order updated successfully! Your order details have been changed and product quantities have been adjusted.',
+                'message' => 'Order updated successfully! Your order details have been changed.',
                 'status' => 200,
                 'data' => new OrderResource($order)
             ], 200);

@@ -12,7 +12,7 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\BusinessAccountController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\NotificationController;
-
+use App\Http\Controllers\AdminDashboardController;
 // Public routes - no authentication required
 // User authentication
 Route::post('/register', [AuthController::class, 'register']);
@@ -28,24 +28,30 @@ Route::get('/categories/{id}', [CategoriesController::class, 'show'])->name('cat
 
 // Business account routes
 Route::get('/business/index', [BusinessAccountController::class, 'index']);
-Route::get('/business/{id}', [BusinessAccountController::class, 'show'])->name('business.profile');
 Route::prefix('business')->group(function () {
     Route::post('/register', [BusinessAccountController::class, 'register']);
     Route::post('/login', [BusinessAccountController::class, 'login']);
-    Route::get('/profile/{id}', [BusinessAccountController::class, 'profile'])->name('api.business.profile');
-
+    Route::patch('/update-profile', [BusinessAccountController::class, 'updateProfile']);
     // Authenticated business routes
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/my-products', [BusinessAccountController::class, 'myProducts'])->name('api.business.myProducts');
         Route::post('/products/new', [ProductController::class, 'store']);
         Route::patch('/products/{id}/edit', [ProductController::class, 'edit']);
+        Route::post('/logout', [BusinessAccountController::class, 'logout']);
+
     });
+
+    // Routes with dynamic parameters should come after static routes
+    Route::get('/profile/{id}', [BusinessAccountController::class, 'profile'])->name('api.business.profile');
 });
+Route::get('/business/{id}', [BusinessAccountController::class, 'show'])->name('business.profile');
 
 // Admin routes
 Route::prefix('admins')->group(function () {
-    Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/login', [AdminAuthController::class, 'login'])->name('api.admins.login');
 
     Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('api.admins.dashboard');
         Route::get('/index', [AdminController::class, 'index']);
         Route::get('/{id}', [AdminController::class, 'show']);
         Route::post('/logout', [AdminAuthController::class, 'logout']);

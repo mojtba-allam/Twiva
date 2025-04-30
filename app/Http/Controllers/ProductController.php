@@ -198,8 +198,8 @@ class ProductController extends Controller
 
             $updateData = $request->only(['title', 'description', 'price', 'quantity', 'image_url', 'category_id']);
 
-            // If the product was previously approved, set it back to pending
-            if ($product->status === Products::STATUS_APPROVED) {
+            // If the product was previously approved or rejected, set it back to pending
+            if ($product->status === Products::STATUS_APPROVED || $product->status === Products::STATUS_REJECTED) {
                 $updateData['status'] = Products::STATUS_PENDING;
                 $updateData['rejection_reason'] = null; // Clear any previous rejection reason
 
