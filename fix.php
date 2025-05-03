@@ -1,0 +1,1 @@
+<?php $appPath = "config/app.php"; $content = file_get_contents("vendor/laravel/framework/src/Illuminate/Foundation/stubs/config.stub"); file_put_contents($appPath, $content); echo "App config reset";
