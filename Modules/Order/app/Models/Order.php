@@ -12,7 +12,7 @@ class Order extends Model
 {
     /** @use HasFactory<\Database\Factories\OrderFactory> */
     use HasFactory;
-
+    protected $table = 'order';
     protected $fillable = [
         'user_id',
         'products_list',

@@ -12,6 +12,7 @@ class Category extends Model
 {
     /** @use HasFactory<\Database\Factories\CategoriesFactory> */
     use HasFactory;
+    protected $table = 'category';
     public function Product(): HasMany
     {
         return $this->hasMany(Product::class,'category_id');

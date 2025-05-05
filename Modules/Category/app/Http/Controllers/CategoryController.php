@@ -33,7 +33,11 @@ class CategoryController extends Controller
         $category->created_at = now();
         $category->updated_at = now();
         $category->save();
-        return new CategoryResource($category);
+
+        return response()->json([
+            'message' => 'Category created successfully',
+            'status' => 201
+        ], 201);
     }
 
     /**
@@ -42,17 +46,48 @@ class CategoryController extends Controller
     public function show(string $id)
     {
         try {
-            $isAdmin = Auth::guard('admin')->check();
+            // Check which guard is authenticated
+            $user = null;
+            $guard = null;
 
-            if ($isAdmin) {
-                // Admin sees all products
-                $category = Category::with('Product')->findOrFail($id);
-            } else {
-                // Regular users and business accounts see only approved products
-                $category = Category::with(['Product' => function($query) {
-                    $query->where('status', 'approved');
-                }])->findOrFail($id);
+            if (Auth::guard('admin')->check()) {
+                $user = Auth::guard('admin')->user();
+                $guard = 'admin';
+            } elseif (Auth::guard('business')->check()) {
+                $user = Auth::guard('business')->user();
+                $guard = 'business';
+            } elseif (Auth::guard('user')->check()) {
+                $user = Auth::guard('user')->user();
+                $guard = 'user';
             }
+
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            // Find the category
+            $category = Category::query();
+
+            // Load relationships based on guard
+            if ($guard === 'admin') {
+                $category->with(['Product' => function($query) {
+                    $query->with('business');
+                }]);
+            } elseif ($guard === 'business') {
+                $category->with(['Product' => function($query) use ($user) {
+                    $query->where(function($q) use ($user) {
+                        $q->where('status', 'approved')
+                          ->orWhere('business_account_id', $user->id);
+                    })->with('business');
+                }]);
+            } else {
+                $category->with(['Product' => function($query) {
+                    $query->where('status', 'approved')
+                          ->with('business');
+                }]);
+            }
+
+            $category = $category->findOrFail($id);
 
             return new CategoryResource($category);
         } catch (ModelNotFoundException $e) {
@@ -67,7 +102,7 @@ class CategoryController extends Controller
     /**
      * Edit the specified resource in storage.
      */
-    public function edit(Request $request, string $id)
+    public function update(Request $request, string $id)
     {
         try {
             $request->validate([

@@ -5,7 +5,7 @@ namespace Modules\Business\database\seeders;
 use Illuminate\Database\Seeder;
 use Modules\Business\app\Models\Business;
 
-class BusinessSeeder extends Seeder
+class BusinessDatabaseSeeder extends Seeder
 {
     public function run(): void
     {

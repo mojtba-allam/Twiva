@@ -7,7 +7,7 @@ use Modules\Product\app\Models\Product;
 use Modules\Business\app\Models\Business;
 use Modules\Category\app\Models\Category;
 
-class ProductSeeder extends Seeder
+class ProductDatabaseSeeder extends Seeder
 {
     public function run(): void
     {

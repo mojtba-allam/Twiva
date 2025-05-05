@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Order\app\Models\Order;
 use Modules\User\app\Models\User;
 
-class OrderSeeder extends Seeder
+class OrderDatabaseSeeder extends Seeder
 {
     public function run(): void
     {

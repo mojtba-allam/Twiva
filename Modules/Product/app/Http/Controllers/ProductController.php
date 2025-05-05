@@ -22,17 +22,35 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-
     public function index(Request $request)
     {
-        $query = Product::where('status', 'approved')
-            ->where('quantity', '>', 0);
+        // Get the authenticated user
+        $user = Auth::guard('sanctum')->user();
+
+        // Check if user is admin (by role or guard)
+        $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
+
+        // Start query - for admins show all products, for others only show approved products
+        $query = Product::query();
+
+        if (!$isAdmin) {
+            // Non-admins only see approved products with quantity > 0
+            $query->where('status', 'approved')
+                  ->where('quantity', '>', 0);
+        } else {
+            // Admins can filter by status if requested
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+        }
 
         // Search by title
         if ($request->has('search')) {
             $searchTerm = $request->search;
-            $query->where('title', 'like', '%' . $searchTerm . '%')
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'like', '%' . $searchTerm . '%')
                   ->orWhere('description', 'like', '%' . $searchTerm . '%');
+            });
         }
 
         // Filter by category
@@ -57,6 +75,9 @@ class ProductController extends Controller
         // Sort by latest
         if ($request->has('sort_by') && $request->sort_by === 'latest') {
             $query->latest();
+        } else {
+            // Default sorting by created_at in descending order
+            $query->latest();
         }
 
         $products = $query->paginate(10);
@@ -72,7 +93,8 @@ class ProductController extends Controller
                 'min_price' => $request->min_price ?? null,
                 'max_price' => $request->max_price ?? null,
                 'sort_price' => $request->sort_price ?? null,
-                'sort_by' => $request->sort_by ?? null
+                'sort_by' => $request->sort_by ?? null,
+                'status' => $isAdmin ? ($request->status ?? 'all') : 'approved'
             ],
             'data' => ProductResource::collection($products)
         ]);
@@ -93,7 +115,7 @@ class ProductController extends Controller
         ]);
 
         $user = Auth::guard('sanctum')->user();
-        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+        $isBusiness = $user && $user instanceof \Modules\Business\app\Models\Business;
 
         if (!$isBusiness) {
             return response()->json([
@@ -128,13 +150,22 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with(['category', 'businessAccount'])->findOrFail($id);
+            $product = Product::with(['category', 'business'])->findOrFail($id);
 
+            // Get the authenticated user
+            $user = Auth::guard('sanctum')->user();
+
+            // Check if the product is not approved and the user is not authorized to view it
             if ($product->status !== Product::STATUS_APPROVED) {
-                $user = null;
-                $isAdmin = Auth::guard('admin')->check();
-                $isBusiness = Auth::guard('business')->check();
-                if (!$isAdmin && (!$isBusiness || Auth::guard('business')->user()->id !== $product->business_account_id)) {
+                // Check if user is admin (by role or guard)
+                $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
+
+                // Check if user is the business owner of this product
+                $isBusiness = $user && $user instanceof \Modules\Business\app\Models\Business;
+                $isOwner = $isBusiness && $user->id === $product->business_account_id;
+
+                // If not admin and not the business owner, return 404
+                if (!$isAdmin && !$isOwner) {
                     return response()->json(['message' => 'Product not found'], 404);
                 }
             }
@@ -146,7 +177,15 @@ class ProductController extends Controller
             // Add additional fields for the detailed view
             $productData['description'] = $product->description;
             $productData['category_name'] = $product->category ? $product->category->name : null;
-            $productData['business_name'] = $product->businessAccount ? $product->businessAccount->name : null;
+            $productData['business_name'] = $product->business ? $product->business->name : null;
+
+            // Add status information for admins and business owners
+            if (Auth::guard('sanctum')->check()) {
+                $productData['status'] = $product->status;
+                if ($product->status === Product::STATUS_REJECTED && $product->rejection_reason) {
+                    $productData['rejection_reason'] = $product->rejection_reason;
+                }
+            }
 
             return response()->json($productData);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

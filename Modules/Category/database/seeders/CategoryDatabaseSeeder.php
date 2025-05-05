@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Category\app\Models\Category;
 use Modules\Admin\app\Models\Admin;
 
-class CategorySeeder extends Seeder
+class CategoryDatabaseSeeder extends Seeder
 {
     public function run(): void
     {

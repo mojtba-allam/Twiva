@@ -5,8 +5,9 @@ namespace Modules\Admin\app\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Admin\app\Models\Admin;
-use Modules\Admin\app\Http\Resources\AdminResource;
+use Modules\Admin\app\Http\Resources\AdminResource as AdminResource;
 use Illuminate\Support\Facades\Hash;
+
 
 class AdminController extends Controller
 {

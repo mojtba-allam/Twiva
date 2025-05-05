@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace Modules\Admin\app\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -20,9 +20,14 @@ class AdminResource extends JsonResource
         $data = [
             'id' => $this->id,
             'name' => $this->name,
-            'email' => $this->email,
             'image' => $this->profile_picture,
             // bio is intentionally excluded as requested
+            'email' => $this->when(strpos($routePath, 'admins/index') == false, function () {
+                return $this->email;
+            }),
+            'bio' => $this->when(strpos($routePath, 'admins/index') == false, function () {
+                return $this->bio;
+            }),
         ];
 
         // Only include profile_url when showing a collection (index)

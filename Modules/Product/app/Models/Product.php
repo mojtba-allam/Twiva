@@ -12,7 +12,7 @@ use Modules\Category\app\Models\Category;
 class Product extends Model
 {
     use HasFactory;
-
+    protected $table = 'product';
     protected $fillable = [
         'title',
         'description',
@@ -43,7 +43,7 @@ class Product extends Model
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    public function businessAccount(): BelongsTo
+    public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class, 'business_account_id');
     }

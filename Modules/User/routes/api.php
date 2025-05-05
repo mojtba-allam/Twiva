@@ -16,6 +16,6 @@ Route::middleware('auth:user')->prefix('v1')->group(function () {
 
 // General authenticated routes
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
-    Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
-    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show')->where('id', '[0-9]+');
 });

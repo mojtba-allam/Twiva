@@ -35,7 +35,7 @@ class AdminAuthController extends Controller
         $user = $request->user();
 
         // Check if the authenticated user is an Admin
-        if ($user instanceof \App\Models\Admin) {
+        if ($user instanceof \Modules\Admin\app\Models\Admin) {
             $user->tokens()->delete();
             return response()->json(['message' => 'Admin logged out successfully']);
         }

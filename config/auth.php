@@ -42,7 +42,7 @@ return [
         ],
         'admin' => [
             'driver' => 'sanctum',
-            'provider' => 'admins',
+            'provider' => 'admin',
         ],
         'user' => [
             'driver' => 'sanctum',
@@ -73,19 +73,30 @@ return [
 
     'providers' => [
 
-        'users' => [
+        'user' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class,
+            'model' => Modules\User\app\Models\User::class,
         ],
-        'admins' => [
+        'admin' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model' => Modules\Admin\app\Models\Admin::class,
         ],
-        'business_accounts' => [
+        'business' => [
             'driver' => 'eloquent',
-            'model' => App\Models\BusinessAccount::class,
+            'model' => Modules\Business\app\Models\Business::class,
         ],
-
+        'product' => [
+            'driver' => 'eloquent',
+            'model' => Modules\Product\app\Models\Product::class,
+        ],
+        'category' => [
+            'driver' => 'eloquent',
+            'model' => Modules\Category\app\Models\Category::class,
+        ],
+        'order' => [
+            'driver' => 'eloquent',
+            'model' => Modules\Order\app\Models\Order::class,
+        ],
         // 'users' => [
         //     'driver' => 'database',
         //     'table' => 'users',

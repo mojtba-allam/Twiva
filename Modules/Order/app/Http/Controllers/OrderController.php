@@ -10,7 +10,7 @@ use Modules\Admin\app\Models\Admin;
 use Modules\User\app\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
-use Modules\Order\Http\Resources\OrderResource;
+use Modules\Order\app\Http\Resources\OrderResource;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\DB;
 use Modules\Notification\app\Services\NotificationService;

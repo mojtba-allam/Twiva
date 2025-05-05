@@ -18,7 +18,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'image' => $this->image,
-            'url' => route('users.show', $this->id)
+            'url' => url("/api/v1/users/{$this->id}")
         ];
     }
 }

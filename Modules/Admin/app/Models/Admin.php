@@ -16,6 +16,7 @@ class Admin extends Authenticatable
     /** @use HasFactory<\Database\Factories\AdminFactory> */
     use HasFactory;
     use HasApiTokens;
+    protected $table = 'admin';
     public function Product(): HasMany
     {
         return $this->hasMany(Product::class, 'admin_id');

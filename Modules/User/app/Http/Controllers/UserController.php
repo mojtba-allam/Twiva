@@ -112,7 +112,7 @@ class UserController extends Controller
                             'total_price' => $order->total_price,
                             'status' => $order->status,
                             'created_at' => $order->created_at,
-                            'url' => route('orders.show', $order->id)
+                            'url' => url("/api/v1/orders/{$order->id}")
                         ];
                     });
                 }

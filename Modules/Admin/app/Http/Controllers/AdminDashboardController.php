@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
+
 class AdminDashboardController extends Controller
 {
     public function index()
@@ -48,15 +49,64 @@ class AdminDashboardController extends Controller
         ];
 
         // Recent Activities
+        $recentOrders = Order::with('user')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($order) {
+                // Create a new array with selected fields
+                $orderData = $order->toArray();
+                // Remove products_list
+                unset($orderData['products_list']);
+                // Add order_url
+                $orderData['order_url'] = url("/api/v1/orders/{$order->id}");
+
+                // Simplify user data to only include id and name
+                if (isset($orderData['user'])) {
+                    $orderData['user'] = [
+                        'id' => $order->user->id,
+                        'name' => $order->user->name
+                    ];
+                }
+
+                return $orderData;
+            });
+
+        $recentProducts = Product::with('business')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($product) {
+                // Create a new array with selected fields only
+                $productData = [
+                    'id' => $product->id,
+                    'title' => $product->title,
+                    'price' => $product->price,
+                    'image_url' => $product->image_url,
+                    'product_url' => $product->product_url,
+                    'category_id' => $product->category_id,
+                    'quantity' => $product->quantity,
+                    'status' => $product->status,
+                    'rejection_reason' => $product->rejection_reason,
+                    'created_at' => $product->created_at,
+                    'updated_at' => $product->updated_at,
+                ];
+
+                // Simplify business data
+                if ($product->business) {
+                    $productData['business'] = [
+                        'id' => $product->business->id,
+                        'name' => $product->business->name,
+                        'profile_picture' => $product->business->profile_picture,
+                    ];
+                }
+
+                return $productData;
+            });
+
         $recentActivities = [
-            'orders' => Order::with('user')
-                ->latest()
-                ->take(5)
-                ->get(),
-            'products' => Product::with('business')
-                ->latest()
-                ->take(5)
-                ->get(),
+            'orders' => $recentOrders,
+            'products' => $recentProducts,
             'users' => User::latest()
                 ->take(5)
                 ->get(),
@@ -66,11 +116,11 @@ class AdminDashboardController extends Controller
         ];
 
         // Product Statistics by Category
-        $productsByCategory = Category::withCount(['products as total_products',
-            'products as approved_products' => function ($query) {
+        $productsByCategory = Category::withCount(['Product as total_products',
+            'Product as approved_products' => function ($query) {
                 $query->where('status', 'approved');
             },
-            'products as pending_products' => function ($query) {
+            'Product as pending_products' => function ($query) {
                 $query->where('status', 'pending');
             }
         ])->get();

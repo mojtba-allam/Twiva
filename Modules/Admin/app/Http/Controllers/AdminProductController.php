@@ -27,13 +27,13 @@ class AdminProductController extends Controller
     public function pendingProducts(Request $request)
     {
         // Get the authenticated user
-        $user = Auth::guard('sanctum')->user();
 
-        // Check if user is admin
-        $isAdmin = $user && $user instanceof \App\Models\Admin;
+        $user = Auth::guard('sanctum')->user();
+        // Check if user is admin (Fix namespace here)
+        $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
 
         // Check if user is a business account
-        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+        $isBusiness = $user && $user instanceof \Modules\Business\app\Models\Business;
 
         // If user is neither admin nor business, return 404
         if (!$isAdmin && !$isBusiness) {
@@ -45,6 +45,13 @@ class AdminProductController extends Controller
             $products = Product::where('status', Product::STATUS_PENDING)
                 ->with(['businessAccount', 'category'])
                 ->paginate(10);
+
+            // Check if there are any pending products
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No pending products found'
+                ]);
+            }
 
             return response()->json([
                 'data' => ProductResource::collection($products)
@@ -152,8 +159,16 @@ class AdminProductController extends Controller
     public function deleteProduct($id)
     {
         try {
-            // Find the product
             $product = Product::findOrFail($id);
+
+            // Prevent deleting again when status is already 'deleted'
+            if ($product->status === Product::STATUS_DELETED) {
+                return response()->json([
+                    'message' => 'Product has already been deleted'
+                ], 400);
+            }
+
+            // Find the product
             $productTitle = $product->title;
 
             // Get all orders from the database
@@ -220,7 +235,7 @@ class AdminProductController extends Controller
 
                 // Notify users about deleted products in their orders
                 if (!empty($deleted_products)) {
-                    $user = \App\Models\User::find($order->user_id);
+                    $user = \Modules\User\app\Models\User::find($order->user_id);
                     if ($user) {
                         $this->notificationService->notifyUser(
                             $user,
@@ -245,7 +260,7 @@ class AdminProductController extends Controller
 
             // Notify the business account about the product deletion
             if ($product->business_account_id) {
-                $businessAccount = \App\Models\BusinessAccount::find($product->business_account_id);
+                $businessAccount = \Modules\Business\app\Models\Business::find($product->business_account_id);
                 if ($businessAccount) {
                     $this->notificationService->notifyBusiness(
                         $businessAccount,
@@ -281,10 +296,10 @@ class AdminProductController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         // Check if user is admin
-        $isAdmin = $user && $user instanceof \App\Models\Admin;
+        $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
 
         // Check if user is a business account
-        $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+        $isBusiness = $user && $user instanceof \Modules\Business\app\Models\Business;
 
         // If user is neither admin nor business, return 404
         if (!$isAdmin && !$isBusiness) {

@@ -11,9 +11,11 @@ Route::get('/business/{id}', [BusinessController::class, 'show'])->name('busines
 // Business prefix group
 Route::prefix('v1/business')->group(function () {
     // Public routes
+    Route::get('/index', [BusinessController::class, 'index']);
     Route::post('/register', [BusinessController::class, 'register']);
     Route::post('/login', [BusinessController::class, 'login']);
     Route::get('/profile/{id}', [BusinessController::class, 'profile'])->name('api.business.profile');
+    Route::get('/{id}', [BusinessController::class, 'show'])->name('api.business.profile');
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {

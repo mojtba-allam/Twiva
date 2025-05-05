@@ -14,6 +14,13 @@ class Business extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'business';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -41,6 +48,14 @@ class Business extends Authenticatable
      */
     public function products(): HasMany
     {
-        return $this->hasMany(Product::class,'business_account_id');
+        return $this->hasMany(Product::class, 'business_account_id');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Modules\Business\database\factories\BusinessFactory::new();
     }
 }

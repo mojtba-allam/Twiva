@@ -16,7 +16,20 @@ class CategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $isShowRoute = $request->route()->getName() === 'category.show';
+        // Determine the authenticated guard
+        $guard = null;
+        $user = null;
+
+        if (Auth::guard('admin')->check()) {
+            $guard = 'admin';
+            $user = Auth::guard('admin')->user();
+        } elseif (Auth::guard('business')->check()) {
+            $guard = 'business';
+            $user = Auth::guard('business')->user();
+        } elseif (Auth::guard('user')->check()) {
+            $guard = 'user';
+            $user = Auth::guard('user')->user();
+        }
 
         $response = [
             'id' => $this->id,
@@ -24,20 +37,44 @@ class CategoryResource extends JsonResource
             'url' => route('category.show', $this->id),
         ];
 
-        if ($isShowRoute) {
-            if ($this->Product && $this->Product->isNotEmpty()) {
-                $response['products'] = $this->Product->map(function($product) {
-                    return [
-                        'name' => $product->title,
-                        'price' => $product->price,
-                        'image_url' => $product->image_url,
-                        'product_url' => route('products.show', $product->id)
+        if ($this->relationLoaded('Product')) {
+            $products = $this->Product->map(function($product) use ($guard, $user) {
+                $data = [
+                    'id' => $product->id,
+                    'title' => $product->title,
+                    'description' => $product->description,
+                    'price' => number_format($product->price, 2) . ' $',
+                    'quantity' => $product->quantity,
+                    'image_url' => $product->image_url,
+                    'status' => $product->status,
+                    'product_url' => route('products.show', $product->id),
+                ];
+
+                if ($product->business) {
+                    $data['business_name'] = $product->business->name;
+                    $data['business_url'] = route('business.show', $product->business->id);
+                }
+
+
+                return $data;
+            });
+
+            if ($products->isNotEmpty()) {
+                $response['products'] = $products;
+
+                // Add stats for admin
+                if ($guard === 'admin') {
+                    $response['stats'] = [
+                        'total_products' => $products->count(),
+                        'approved_products' => $products->where('status', 'approved')->count(),
+                        'pending_products' => $products->where('status', 'pending')->count(),
                     ];
-                });
+                }
             } else {
-                $response['message'] = 'This category has no products yet';
+                $response['message'] = 'No products found in this category';
             }
         }
+
         return $response;
     }
 }

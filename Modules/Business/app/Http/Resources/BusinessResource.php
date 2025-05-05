@@ -1,12 +1,12 @@
 <?php
 
-namespace Modules\Business\Http\Resources;
+namespace Modules\Business\app\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 
-class BusinessAccountResource extends JsonResource
+class BusinessResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,19 +16,29 @@ class BusinessAccountResource extends JsonResource
     public function toArray(Request $request): array
     {
         // Check if this is a detailed view or a list view
-        $isDetailedView = $request->route() && ($request->route()->getName() === 'business.profile' ||
-                          $request->routeIs('api.business.profile'));
+        $isDetailedView = false;
+
+        // Check if this is a show route (v1/business/{id})
+        $routeName = $request->route() ? $request->route()->getName() : null;
+        $routePath = $request->route() ? $request->route()->uri() : null;
+
+        // Consider detailed view for profile routes OR direct business ID access
+        if ($routeName === 'business.profile' ||
+            $routeName === 'api.business.profile' ||
+            $routePath === 'api/v1/business/{id}') {
+            $isDetailedView = true;
+        }
 
         // Check if user is admin
         $user = auth()->guard('sanctum')->user();
-        $isAdmin = $user && $user instanceof \App\Models\Admin;
+        $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
 
         // Base data for list view (minimal info)
         $data = [
             'id' => $this->id,
             'name' => $this->name,
             'profile_picture' => $this->profile_picture,
-            'url' => route('business.profile', $this->id)
+            'url' => route('api.business.profile', $this->id)
         ];
 
         // Add additional data for detailed profile view
@@ -44,8 +54,6 @@ class BusinessAccountResource extends JsonResource
                             'image_url' => $product->image_url,
                             'url' => route('products.show', $product->id)
                         ];
-
-                        // Include status and other info for admins
                         if ($isAdmin) {
                             $productData['status'] = $product->status;
                             $productData['id'] = $product->id;
@@ -53,10 +61,9 @@ class BusinessAccountResource extends JsonResource
                                 $productData['rejection_reason'] = $product->rejection_reason;
                             }
                         }
-
                         return $productData;
                     });
-                }),
+                }, []),
             ]);
         }
 

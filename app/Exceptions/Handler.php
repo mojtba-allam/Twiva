@@ -30,13 +30,13 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (NotFoundHttpException $e, $request) {
-            if ($request->is('api/*')) {
+            if ($request->is('api/*')||$request->is('api/v1/*')) {
                 return response()->json([
                     'message' => 'Route not found.',
                     'status' => 404
                 ], 404);
             }
-            
+
             // For web routes, return the 404 view
             return response()->view('errors.404', [], 404);
         });
@@ -49,13 +49,13 @@ class Handler extends ExceptionHandler
                         'status' => 401
                     ], 401);
                 }
-                
+
                 // If it's an API request but doesn't expect JSON (like browser request)
                 if ($request->is('api/admins/*')) {
                     return redirect()->route('admin.login');
                 }
             }
-            
+
             return redirect()->guest(route('admin.login'));
         });
     }

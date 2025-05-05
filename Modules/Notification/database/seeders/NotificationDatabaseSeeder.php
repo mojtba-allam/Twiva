@@ -8,7 +8,7 @@ use Modules\Admin\app\Models\Admin;
 use Modules\Business\app\Models\Business;
 use Modules\User\app\Models\User;
 
-class NotificationSeeder extends Seeder
+class NotificationDatabaseSeeder extends Seeder
 {
     public function run(): void
     {
