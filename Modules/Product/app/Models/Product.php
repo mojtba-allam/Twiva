@@ -12,7 +12,7 @@ use Modules\Category\app\Models\Category;
 class Product extends Model
 {
     use HasFactory;
-    protected $table = 'product';
+    protected $table = 'products';
     protected $fillable = [
         'title',
         'description',
@@ -56,5 +56,10 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Product\database\factories\ProductFactory::new();
     }
 }

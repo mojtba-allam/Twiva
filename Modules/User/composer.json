@@ -17,9 +17,23 @@
     },
     "autoload": {
         "psr-4": {
-            "Modules\\User\\": "",
-            "Modules\\User\\Database\\Factories\\": "database/factories/",
-            "Modules\\User\\Database\\Seeders\\": "database/seeders/"
+            "App\\": "app/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Database\\Factories\\": "database/factories/",
+            "Modules\\": "Modules/",
+            "Modules\\User\\App\\": "Modules/User/app/",
+            "Modules\\Business\\App\\": "Modules/Business/app/",
+            "Modules\\Product\\App\\": "Modules/Product/app/",
+            "Modules\\Order\\App\\": "Modules/Order/app/",
+            "Modules\\Admin\\App\\": "Modules/Admin/app/",
+            "Modules\\Notification\\App\\": "Modules/Notification/app/",
+            "Modules\\Admin\\Database\\Factories\\": "Modules/Admin/database/factories/",
+            "Modules\\User\\Database\\Factories\\": "Modules/User/database/factories/",
+            "Modules\\Business\\Database\\Factories\\": "Modules/Business/database/factories/",
+            "Modules\\Category\\Database\\Factories\\": "Modules/Category/database/factories/",
+            "Modules\\Product\\Database\\Factories\\": "Modules/Product/database/factories/",
+            "Modules\\Order\\Database\\Factories\\": "Modules/Order/database/factories/",
+            "Modules\\Notification\\Database\\Factories\\": "Modules/Notification/database/factories/"
         }
     },
     "autoload-dev": {

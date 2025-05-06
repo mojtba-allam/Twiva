@@ -3,13 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Admin;
-use App\Models\User;
-use App\Models\Categories;
-use App\Models\Order;
-use App\Models\Products;
-use App\Models\BusinessAccount;
-use App\Models\Notification;
+use Modules\Admin\app\Models\Admin;
+use Modules\User\app\Models\User;
+use Modules\Category\app\Models\Category;
+use Modules\Order\app\Models\Order;
+use Modules\Product\app\Models\Product;
+use Modules\Business\app\Models\Business;
+use Modules\Notification\app\Models\Notification;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,29 +22,22 @@ class DatabaseSeeder extends Seeder
         $admins = Admin::factory(10)->create();
 
         // Create users
-        $users = User::factory(100)->create();
+        $this->call(\Modules\User\database\seeders\UserDatabaseSeeder::class);
 
         // Create business accounts
-        $businessAccounts = BusinessAccount::factory(10)->create();
+        $this->call(\Modules\Business\database\seeders\BusinessDatabaseSeeder::class);
 
         // Create categories using existing admins
-        $categories = Categories::factory(10)->create([
-            'admin_id' => fn() => $admins->random()->id
-        ]);
+        $this->call(\Modules\Category\database\seeders\CategoryDatabaseSeeder::class);
 
         // Create products using existing admins and categories
-        $products = Products::factory(100)->create([
-            'business_account_id' => fn() => $businessAccounts->random()->id,
-            'category_id' => fn() => $categories->random()->id
-        ]);
+        $this->call(\Modules\Product\database\seeders\ProductDatabaseSeeder::class);
 
         // Create orders without product_id field
-        Order::factory(50)->create([
-            'user_id' => fn() => $users->random()->id
-        ]);
+        $this->call(\Modules\Order\database\seeders\OrderDatabaseSeeder::class);
 
         // Create notifications for all users
-        $this->seedNotifications($admins, $users, $businessAccounts);
+        $this->call(\Modules\Notification\database\seeders\NotificationDatabaseSeeder::class);
     }
 
     /**
@@ -54,16 +47,19 @@ class DatabaseSeeder extends Seeder
     {
         // Create notifications for admins
         foreach ($admins as $admin) {
+            $this->call(\Modules\Notification\database\seeders\NotificationDatabaseSeeder::class);
             $this->createNotifications(Admin::class, $admin->id, 5);
         }
 
         // Create notifications for business accounts
         foreach ($businessAccounts as $business) {
-            $this->createNotifications(BusinessAccount::class, $business->id, 5);
+            $this->call(\Modules\Notification\database\seeders\NotificationDatabaseSeeder::class);
+            $this->createNotifications(Business::class, $business->id, 5);
         }
 
         // Create notifications for users
         foreach ($users as $user) {
+            $this->call(\Modules\Notification\database\seeders\NotificationDatabaseSeeder::class);
             $this->createNotifications(User::class, $user->id, 5);
         }
     }

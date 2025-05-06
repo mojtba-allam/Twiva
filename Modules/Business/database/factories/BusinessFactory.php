@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\Business\database\factories;
+namespace Modules\Business\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-
+use Modules\Business\app\Models\Business;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\Modules\Business\app\Models\Business>
  */
@@ -16,6 +16,7 @@ class BusinessFactory extends Factory
      *
      * @return array<string, mixed>
      */
+    protected $model = Business::class;
     public function definition(): array
     {
         return [

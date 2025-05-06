@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Notification extends Model
 {
-    protected $table = 'notification';
+    protected $table = 'notifications';
     protected $fillable = [
         'notifiable_type',
         'notifiable_id',
@@ -28,5 +28,8 @@ class Notification extends Model
     public function notifiable(): MorphTo
     {
         return $this->morphTo();
+    }
+    protected static function newFactory(){
+        return \Modules\Notification\Database\Factories\NotificationFactory::new();
     }
 }

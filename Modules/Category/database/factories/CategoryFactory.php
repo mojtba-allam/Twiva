@@ -1,20 +1,22 @@
 <?php
 
-namespace Database\Factories;
+namespace Modules\Category\database\factories;
 
-use App\Models\Admin;
+use Modules\Admin\app\Models\Admin;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Category\app\Models\Category;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Categories>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\Modules\Category\app\Models\Category>
  */
-class CategoriesFactory extends Factory
+class CategoryFactory extends Factory
 {
     /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
      */
+    protected $model = Category::class;
     public function definition(): array
     {
         return [

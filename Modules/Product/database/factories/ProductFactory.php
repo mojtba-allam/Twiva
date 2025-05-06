@@ -1,20 +1,22 @@
 <?php
 
-namespace Database\Factories;
+namespace Modules\Product\database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\Categories;
-use App\Models\BusinessAccount;
+use Modules\Category\app\Models\Category;
+use Modules\Business\app\Models\Business;
+use Modules\Product\app\Models\Product;
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Products>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\Modules\Product\app\Models\Product>
  */
-class ProductsFactory extends Factory
+class ProductFactory extends Factory
 {
     /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
      */
+    protected $model = Product::class;
     public function definition(): array
     {
         return [
@@ -27,8 +29,8 @@ class ProductsFactory extends Factory
             'updated_at' => now(),
             'status' => fake()->randomElement(['pending', 'approved', 'rejected']),
             'rejection_reason' => fake()->sentence(),
-            'business_account_id' => BusinessAccount::factory(),
-            'category_id' => Categories::factory(),
+            'business_account_id' => Business::factory(),
+            'category_id' => Category::factory(),
         ];
     }
 }

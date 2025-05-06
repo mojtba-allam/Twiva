@@ -18,7 +18,7 @@ class Business extends Authenticatable
      *
      * @var string
      */
-    protected $table = 'business';
+    protected $table = 'businesses';
 
     /**
      * The attributes that are mass assignable.
@@ -58,4 +58,5 @@ class Business extends Authenticatable
     {
         return \Modules\Business\database\factories\BusinessFactory::new();
     }
+    
 }

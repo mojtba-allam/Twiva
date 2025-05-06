@@ -12,7 +12,7 @@ class Order extends Model
 {
     /** @use HasFactory<\Database\Factories\OrderFactory> */
     use HasFactory;
-    protected $table = 'order';
+    protected $table = 'orders';
     protected $fillable = [
         'user_id',
         'products_list',
@@ -29,5 +29,10 @@ class Order extends Model
     public function User(): BelongsTo
     {
         return $this->belongsTo(User::class,'user_id');
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Order\database\factories\OrderFactory::new();
     }
 }

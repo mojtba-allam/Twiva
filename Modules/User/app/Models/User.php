@@ -9,13 +9,13 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Order\app\Models\Order;
-
+use Modules\User\database\factories\UserFactory;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
     use HasApiTokens;
-    protected $table = 'user';
+    protected $table = 'users';
     /**
      * The attributes that are mass assignable.
      *
@@ -52,5 +52,10 @@ class User extends Authenticatable
     public function Orders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id');
+    }
+
+    protected static function newFactory(){
+        // return \Modules\User\Database\Factories\UserFactory::new();
+        return UserFactory::new();
     }
 }

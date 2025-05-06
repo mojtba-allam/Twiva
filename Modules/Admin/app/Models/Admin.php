@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Product\app\Models\Product;
 use Modules\Category\app\Models\Category;
+use Modules\Admin\database\factories\AdminFactory;
 class Admin extends Authenticatable
 {
     protected $hidden = ['password', 'created_at', 'updated_at','remember_token'];
@@ -16,7 +17,7 @@ class Admin extends Authenticatable
     /** @use HasFactory<\Database\Factories\AdminFactory> */
     use HasFactory;
     use HasApiTokens;
-    protected $table = 'admin';
+    protected $table = 'admins';
     public function Product(): HasMany
     {
         return $this->hasMany(Product::class, 'admin_id');
@@ -24,5 +25,11 @@ class Admin extends Authenticatable
     public function Categoreis(): HasMany
     {
         return $this->hasMany(Category::class,'admin_id');
+    }
+
+    protected static function newFactory()
+    {
+        // return \Modules\Admin\Database\Factories\AdminFactory::new();
+        return AdminFactory::new();
     }
 }
