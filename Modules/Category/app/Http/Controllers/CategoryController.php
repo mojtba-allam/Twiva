@@ -7,7 +7,7 @@ use Modules\Category\app\Models\Category;
 use Modules\Category\app\Http\Resources\CategoryResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Http\Controllers\Controller;
+use Modules\Category\app\Http\Controllers\Controller;
 class CategoryController extends Controller
 {
     /**

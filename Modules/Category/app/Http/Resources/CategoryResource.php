@@ -34,7 +34,9 @@ class CategoryResource extends JsonResource
         $response = [
             'id' => $this->id,
             'name' => $this->name,
-            'url' => route('category.show', $this->id),
+            // Only show the category URL in the index route
+            'url' =>$this-> when(route('category.index'), route('category.show', $this->id)),
+
         ];
 
         if ($this->relationLoaded('Product')) {
@@ -42,7 +44,6 @@ class CategoryResource extends JsonResource
                 $data = [
                     'id' => $product->id,
                     'title' => $product->title,
-                    'description' => $product->description,
                     'price' => number_format($product->price, 2) . ' $',
                     'quantity' => $product->quantity,
                     'image_url' => $product->image_url,

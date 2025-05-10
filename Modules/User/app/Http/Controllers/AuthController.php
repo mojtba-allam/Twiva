@@ -2,7 +2,7 @@
 
 namespace Modules\User\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\User\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\User\app\Models\User;
 use Illuminate\Support\Facades\Hash;

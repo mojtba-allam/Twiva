@@ -66,7 +66,6 @@ class NotificationDatabaseSeeder extends Seeder
                 'title' => $titles[$type],
                 'message' => $messages[$type],
                 'data' => ['product_id' => rand(1, 100)],
-                'read' => $read,
                 'read_at' => $read ? now() : null,
             ]);
         }

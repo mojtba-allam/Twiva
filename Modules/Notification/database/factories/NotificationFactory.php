@@ -36,7 +36,6 @@ class NotificationFactory extends Factory
             'title' => $titles[$type],
             'message' => $messages[$type],
             'data' => ['product_id' => $this->faker->numberBetween(1, 100)],
-            'read' => $this->faker->boolean(),
             'read_at' => $this->faker->boolean() ? now() : null,
         ];
     }

@@ -30,8 +30,13 @@ class BusinessResource extends JsonResource
         }
 
         // Check if user is admin
-        $user = auth()->guard('sanctum')->user();
+        $user    = auth()->guard('sanctum')->user();
         $isAdmin = $user && $user instanceof \Modules\Admin\app\Models\Admin;
+
+        // Check if user is the business owner
+        $isOwner = $user
+                && $user instanceof \Modules\Business\app\Models\Business
+                && $user->id === $this->id;
 
         // Base data for list view (minimal info)
         $data = [
@@ -41,28 +46,42 @@ class BusinessResource extends JsonResource
             'url' => route('api.business.profile', $this->id)
         ];
 
+
+
         // Add additional data for detailed profile view
         if ($isDetailedView) {
             $data = array_merge($data, [
                 'email' => $this->email,
                 'bio' => $this->bio,
-                'products' => $this->whenLoaded('products', function() use ($isAdmin) {
-                    return $this->products->map(function($product) use ($isAdmin) {
-                        $productData = [
-                            'title' => $product->title,
-                            'price' => $product->price,
-                            'image_url' => $product->image_url,
-                            'url' => route('products.show', $product->id)
-                        ];
-                        if ($isAdmin) {
-                            $productData['status'] = $product->status;
-                            $productData['id'] = $product->id;
-                            if ($product->status === 'rejected') {
-                                $productData['rejection_reason'] = $product->rejection_reason;
+                'products' => $this->whenLoaded('products', function() use ($isAdmin, $isOwner) {
+
+                            return $this->products
+                                ->filter(function($product) use ($isAdmin, $isOwner) {
+                                // normal users (not admin, not owner) see only approved
+                                return $isAdmin || $isOwner || $product->status === 'approved';
+                        })
+                        ->map(function($product) use ($isAdmin, $isOwner) {
+                            // basic public fields
+                            $productData = [
+                                'id'        => $product->id,
+                                'title'     => $product->title,
+                                'price'     => $product->price,
+                                'image_url' => $product->image_url,
+                                'url'       => route('products.show', $product->id),
+                            ];
+
+                            // admin (and only admin) gets status, id, rejection reason
+                            if ($isAdmin || $isOwner) {
+                                $productData['status'] = $product->status;
+                                if ($product->status === 'rejected') {
+                                    $productData['rejection_reason'] = $product->rejection_reason;
+                                }
                             }
-                        }
-                        return $productData;
-                    });
+
+                                return $productData;
+
+                        })
+                        ->values();  // re‐index keys as a plain array
                 }, []),
             ]);
         }

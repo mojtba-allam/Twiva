@@ -5,11 +5,13 @@ use Modules\User\app\Http\Controllers\UserController;
 use Modules\User\app\Http\Controllers\AuthController;
 
 // Public routes without versioning
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::prefix('v1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
 // User authenticated routes
-Route::middleware('auth:user')->prefix('v1')->group(function () {
+Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::patch('/users/{id}/edit', [UserController::class, 'edit']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });

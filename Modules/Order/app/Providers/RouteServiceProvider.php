@@ -9,6 +9,7 @@ class RouteServiceProvider extends ServiceProvider
 {
     protected string $name = 'Order';
 
+
     /**
      * Called before routes are registered.
      *

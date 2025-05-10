@@ -50,7 +50,7 @@ return [
         ],
         'business' => [
             'driver' => 'sanctum',
-            'provider' => 'business_accounts',
+            'provider' => 'business',
         ],
     ],
 
@@ -129,8 +129,8 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
-        'business_accounts' => [
-            'provider' => 'business_accounts',
+        'business' => [
+            'provider' => 'business',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,

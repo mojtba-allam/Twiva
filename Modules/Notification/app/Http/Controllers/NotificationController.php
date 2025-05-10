@@ -2,12 +2,12 @@
 
 namespace Modules\Notification\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\Notification;
-use App\Services\NotificationService;
+use Modules\Notification\app\Http\Controllers\Controller;
+use Modules\Notification\app\Models\Notification;
+use Modules\Notification\app\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Http\Resources\NotificationResource;
+use Modules\Notification\app\Http\Resources\NotificationResource;
 
 class NotificationController extends Controller
 {

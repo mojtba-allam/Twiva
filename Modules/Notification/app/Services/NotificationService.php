@@ -75,9 +75,8 @@ class NotificationService
     {
         Notification::where('notifiable_type', get_class($notifiable))
             ->where('notifiable_id', $notifiable->id)
-            ->where('read', false)
+            ->where('read_at', null)
             ->update([
-                'read' => true,
                 'read_at' => now()
             ]);
     }

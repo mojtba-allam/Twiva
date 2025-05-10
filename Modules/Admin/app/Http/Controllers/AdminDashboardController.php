@@ -2,7 +2,7 @@
 
 namespace Modules\Admin\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Admin\app\Http\Controllers\Controller;
 use Modules\User\app\Models\User;
 use Modules\Order\app\Models\Order;
 use Modules\Product\app\Models\Product;
@@ -58,14 +58,17 @@ class AdminDashboardController extends Controller
                 $orderData = $order->toArray();
                 // Remove products_list
                 unset($orderData['products_list']);
+                // Remove user_id
+                unset($orderData['user_id']);
                 // Add order_url
                 $orderData['order_url'] = url("/api/v1/orders/{$order->id}");
 
                 // Simplify user data to only include id and name
-                if (isset($orderData['user'])) {
+                if (isset($orderData)) {
                     $orderData['user'] = [
-                        'id' => $order->user->id,
-                        'name' => $order->user->name
+                        'user_id' => $order->user->id,
+                        'user_name' => $order->user->name,
+                        'user_url' => url("/api/v1/users/{$order->user->id}")
                     ];
                 }
 
@@ -98,6 +101,7 @@ class AdminDashboardController extends Controller
                         'id' => $product->business->id,
                         'name' => $product->business->name,
                         'profile_picture' => $product->business->profile_picture,
+                        'business_url' => $product->business->business_url
                     ];
                 }
 

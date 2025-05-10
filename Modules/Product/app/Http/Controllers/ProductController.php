@@ -2,7 +2,7 @@
 
 namespace Modules\Product\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Product\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Product\app\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -83,7 +83,6 @@ class ProductController extends Controller
         $products = $query->paginate(10);
 
         return response()->json([
-            'message' => 'Products retrieved successfully',
             'total' => $products->total(),
             'page' => $products->currentPage(),
             'last_page' => $products->lastPage(),
@@ -227,7 +226,7 @@ class ProductController extends Controller
 
             // Check if the authenticated user is a business account and is the owner of the product
             $user = Auth::guard('sanctum')->user();
-            $isBusiness = $user && $user instanceof \App\Models\BusinessAccount;
+            $isBusiness = $user && $user instanceof \Modules\Business\app\Models\Business;
 
             if (!$isBusiness || $user->id !== $product->business_account_id) {
                 return response()->json([

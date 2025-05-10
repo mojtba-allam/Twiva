@@ -2,11 +2,12 @@
 
 namespace Modules\Business\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Business\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Business\app\Models\Business;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,7 +32,7 @@ class BusinessController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:business_accounts'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:businesses'],
             'password' => ['required', Password::defaults()],
             'bio' => ['nullable', 'string'],
             'profile_picture' => ['nullable', 'image', 'max:2048'], // 2MB max
@@ -124,14 +125,14 @@ class BusinessController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $business = $request->user('sanctum');
+        $business = $request->user();
         if (!$business || !($business instanceof Business)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:business_accounts,email,' . $business->id],
+            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:businesses,email,' . $business->id],
             'bio' => ['nullable', 'string'],
             'profile_picture' => ['nullable', 'string']
         ]);
@@ -164,7 +165,7 @@ class BusinessController extends Controller
 
     public function logout(Request $request)
     {
-        $business = $request->user('sanctum');
+        $business = $request->user();
         if ($business && $business instanceof Business) {
             $business->tokens()->delete();
             return response()->json(['message' => 'Logged out successfully']);
@@ -174,55 +175,45 @@ class BusinessController extends Controller
     }
 
     public function show($id)
-{
-    try {
-        $business = Business::with('products')->findOrFail($id);
-        return new BusinessResource($business);
-    } catch (ModelNotFoundException $e) {
-        return response()->json([
-            'message' => 'Business not found'
-        ], 404);
+    {
+        try {
+            $business = Business::with('products')->findOrFail($id);
+            return new BusinessResource($business);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Business not found'
+            ], 404);
+        }
     }
-}
 
     public function myProducts(Request $request)
     {
-        try {
-            $business = $request->user('sanctum');
+        // Use the Sanctum‐authenticated user
+        $business = $request->user(); // thanks to auth:sanctum on the route
 
-                if (!$business || !($business instanceof Business)) {
-                return response()->json([
-                    'message' => 'Unauthorized. Please login as a business account.'
-                ], 403);
-            }
-
-            $products = $business->products()
-                ->select('id', 'title', 'image_url', 'status')
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'title' => $product->title,
-                        'image' => $product->image_url,
-                        'status' => $product->status,
-                        'url' => url("/api/products/{$product->id}")
-                    ];
-                });
-
-            if ($products->isEmpty()) {
-                return response()->json([
-                    'message' => 'You have no products yet.'
-                ]);
-            }
-
+        if (! $business instanceof Business) {
             return response()->json([
-                'data' => $products
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error retrieving products'
-            ], 500);
+                'message' => 'Unauthorized. Please login as a business account.'
+            ], 403);
         }
+
+        $products = $business->products()
+            ->select('id','title','image_url','status','price','quantity')
+            ->orderBy('created_at','desc')
+            ->get()
+            ->map(function($product) {
+                $product->product_url = route('products.show', $product->id);
+                return $product;
+            });
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'message' => 'You have no products yet.'
+            ]);
+        }
+
+        return response()->json([
+            'data' => $products
+        ]);
     }
 }

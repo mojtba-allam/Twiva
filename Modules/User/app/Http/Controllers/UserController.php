@@ -2,7 +2,7 @@
 
 namespace Modules\User\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\User\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\User\app\Models\User;
 use Modules\Admin\app\Models\Admin;
@@ -56,7 +56,7 @@ class UserController extends Controller
 
         // Check if the authenticated user is an admin
         $isAdmin = $user instanceof Admin;
-        $isBusinessAccount = $user instanceof \App\Models\BusinessAccount;
+        $isBusinessAccount = $user instanceof \Modules\Business\app\Models\Business;
         $isSameUser = ($user instanceof User) && ($user->id == $id);
 
         // Set up base query
@@ -93,7 +93,7 @@ class UserController extends Controller
                 'bio' => $userData->bio ?? null,
             ]);
 
-            // Include created_at and updated_at for admins
+            // Include created_at and updated_at for admins only
             if ($isAdmin) {
                 $response = array_merge($response, [
                     'created_at' => $userData->created_at,
@@ -104,13 +104,14 @@ class UserController extends Controller
             // Include orders data only for admins and the user themselves
             if (($isAdmin || $isSameUser) && $userData->orders) {
                 if ($userData->orders->isEmpty()) {
-                    $response['orders_message'] = 'User has no orders.';
+                    $response['orders'] = 'User has no orders.';
                 } else {
                     $response['orders'] = $userData->orders->map(function($order) {
                         return [
                             'id' => $order->id,
                             'total_price' => $order->total_price,
                             'status' => $order->status,
+
                             'created_at' => $order->created_at,
                             'url' => url("/api/v1/orders/{$order->id}")
                         ];

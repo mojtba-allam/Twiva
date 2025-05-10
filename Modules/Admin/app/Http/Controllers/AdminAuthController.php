@@ -2,7 +2,7 @@
 
 namespace Modules\Admin\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Admin\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Admin\app\Models\Admin;
 use Illuminate\Support\Facades\Hash;

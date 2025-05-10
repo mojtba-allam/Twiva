@@ -2,7 +2,7 @@
 
 namespace Modules\Admin\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Admin\app\Http\Controllers\Controller;
 use Modules\Product\app\Models\Product;
 use Modules\Business\app\Models\Business;
 use Illuminate\Http\Request;
@@ -43,7 +43,7 @@ class AdminProductController extends Controller
         // If admin, show all pending products with business information
         if ($isAdmin) {
             $products = Product::where('status', Product::STATUS_PENDING)
-                ->with(['businessAccount', 'category'])
+                ->with(['business', 'category'])
                 ->paginate(10);
 
             // Check if there are any pending products
@@ -94,7 +94,7 @@ class AdminProductController extends Controller
 
             // Notify business about product approval
             $this->notificationService->notifyBusiness(
-                $product->businessAccount,
+                $product->business,
                 'product_approved',
                 'Product Approved',
                 "Your product '{$product->title}' has been approved",
@@ -136,7 +136,7 @@ class AdminProductController extends Controller
 
             // Notify business about product rejection
             $this->notificationService->notifyBusiness(
-                $product->businessAccount,
+                $product->business,
                 'product_rejected',
                 'Product Rejected',
                 "Your product '{$product->title}' has been rejected. Reason: {$request->rejection_reason}",
@@ -309,7 +309,7 @@ class AdminProductController extends Controller
         // If admin, show all rejected products with business information
         if ($isAdmin) {
             $products = Product::where('status', Product::STATUS_REJECTED)
-                ->with(['businessAccount', 'category'])
+                ->with(['business', 'category'])
                 ->paginate(10);
 
             return response()->json([

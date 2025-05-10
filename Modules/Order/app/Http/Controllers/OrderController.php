@@ -2,7 +2,7 @@
 
 namespace Modules\Order\app\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Modules\Order\app\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Order\app\Models\Order;
 use Modules\Product\app\Models\Product;
@@ -52,22 +52,15 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        // Check user authentication
-        if (!Auth::guard('user')->check()) {
+        // Only regular users can create orders
+        $current = Auth::guard('user')->user();
+        if (!$current || !$current instanceof User) {
             return response()->json([
-                'message' => 'Unauthorized. Please login to create orders.',
-                'status' => 401
-            ], 401);
+                'message' => 'Unauthorized. Only regular users can create orders.',
+                'status' => 403
+            ], 403);
         }
-
-        $user = Auth::guard('user')->user();
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not found',
-                'status' => 404
-            ], 404);
-        }
-
+        $user = $current;
         // Validate request structure
         $request->validate([
             'products_list' => 'required|array',

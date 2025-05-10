@@ -22,26 +22,39 @@ class ProductResource extends JsonResource
         $isAdmin = $user && $user instanceof Admin;
         $isOwnerBusiness = $user && $user->id == $this->business_account_id;
 
+        // Determine if this is the detail (show) endpoint
+        $routeName = $request->route() ? $request->route()->getName() : null;
+
         // Build the response
         $response = [
             'id' => $this->id,
             'title' => $this->title,
-            'product_url' => route('products.show', $this->id),
             'price' => $this->price,
             'image_url' => $this->image_url,
             'status' => $this->status,
             'quantity' => $this->quantity,
-            'description' => $this->description
         ];
+
+        // Only include description on detail (e.g. show) contexts
+        if ($routeName === 'products.show') {
+            $response['description'] = $this->description;
+        }
+
+        // Only include product_url on non-detail (e.g. index) contexts
+        if ($routeName !== 'products.show') {
+            $response['product_url'] = route('products.show', $this->id);
+        }
 
         // Add category name if category is loaded
         if ($this->relationLoaded('category') && $this->category) {
             $response['category_name'] = $this->category->name;
+            $response['category_url'] = route('category.show', $this->category->id);
         }
 
-        // Add business name if business account is loaded
-        if ($this->relationLoaded('businessAccount') && $this->businessAccount) {
-            $response['business_name'] = $this->businessAccount->name;
+        // Add business name if the business() relation is loaded
+        if ($this->relationLoaded('business') && $this->business) {
+            $response['business_name'] = $this->business->name;
+            $response['business_url'] = route('api.business.profile', $this->business->id);
         }
 
         // Show rejection reason when product is rejected and user is admin or owner

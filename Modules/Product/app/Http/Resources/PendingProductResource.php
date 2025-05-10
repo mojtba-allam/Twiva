@@ -34,21 +34,21 @@ class PendingProductResource extends JsonResource
                 ];
             }),
             'business' => [
-                'id' => $this->businessAccount->id,
-                'name' => $this->businessAccount->name,
-                'image_url' => $this->businessAccount->image_url,
-                'url' => route('business.profile', $this->businessAccount->id)
+                'id' => $this->business->id,
+                'name' => $this->business->name,
+                'image_url' => $this->business->image_url,
+                'url' => route('business.profile', $this->business->id)
             ]
         ];
 
         // Additional information for admin only
         if ($isAdmin) {
-            $response['business'] = $this->whenLoaded('businessAccount', function() {
+            $response['business'] = $this->whenLoaded('business', function() {
                 return [
-                    'id' => $this->businessAccount->id,
-                    'name' => $this->businessAccount->name,
-                    'image_url' => $this->businessAccount->image_url,
-                    'url' => route('business.profile', $this->businessAccount->id)
+                    'id' => $this->business->id,
+                    'name' => $this->business->name,
+                    'image_url' => $this->business->image_url,
+                    'url' => route('business.profile', $this->business->id)
                 ];
             });
         }

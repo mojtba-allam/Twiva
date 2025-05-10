@@ -15,7 +15,6 @@ return new class extends Migration
             $table->string('title'); // Notification title
             $table->text('message'); // Notification message
             $table->json('data')->nullable(); // Additional data
-            $table->boolean('read')->default(false); // Read status
             $table->timestamp('read_at')->nullable(); // When it was read
             $table->timestamps();
         });
