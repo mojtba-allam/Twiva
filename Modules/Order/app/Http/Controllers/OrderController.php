@@ -14,6 +14,8 @@ use Modules\Order\app\Http\Resources\OrderResource;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\DB;
 use Modules\Notification\app\Services\NotificationService;
+use Illuminate\Auth\Access\AuthorizationException;
+
 class OrderController extends Controller
 {
     protected $notificationService;
@@ -21,6 +23,13 @@ class OrderController extends Controller
     public function __construct(NotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
+
+        // This will apply viewAny, view, create, update, delete, etc.
+        $this->authorizeResource(
+            \Modules\Order\app\Models\Order::class,
+            'order',
+            ['except' => ['index', 'store', 'show', 'update', 'destroy']]
+        );
     }
 
     /**
@@ -36,7 +45,10 @@ class OrderController extends Controller
         // Then check user authentication
         $user = Auth::guard('user')->user();
         if (!$user) {
-            throw new NotFoundHttpException();
+            return response()->json([
+                'message' => 'Unauthorized. Only regular users can view orders.',
+                'status' => 403
+            ], 403);
         }
 
         $orders = Order::where('user_id', $user->id)->with(['user'])->get();
@@ -174,37 +186,41 @@ class OrderController extends Controller
      */
     public function show(Request $request, string $id)
     {
-        // Check admin authentication first
-        if (Auth::guard('admin')->check()) {
-            $order = Order::with(['user'])->find($id);
-            if (!$order) {
-                return response()->json(['message' => 'Order not found'], 404);
-            }
-            return new OrderResource($order);
-        }
-
-        // Check user authentication
-        if (!Auth::guard('user')->check()) {
+        // Block business accounts first
+        if (Auth::guard('business')->check()) {
             return response()->json([
-                'message' => 'Unauthorized. Please login to view orders.',
+                'message' => 'Unauthorized. Only regular users can view orders.',
                 'status' => 403
             ], 403);
         }
 
-        $user = Auth::guard('user')->user();
-
-        // First check if order exists
-        $orderExists = Order::where('id', $id)->exists();
-        if (!$orderExists) {
-            return response()->json(['message' => 'Order not found'], 404);
+        // Block unauthenticated or non-user
+        if (!Auth::guard('user')->check()) {
+            return response()->json([
+                'message' => 'Unauthorized. Only regular users can view orders.',
+                'status' => 403
+            ], 403);
         }
 
-        // Then check if it belongs to the user
-        $order = Order::where('id', $id)->where('user_id', $user->id)->with(['user'])->first();
-
-        if (!$order) {
+        // Try to find the order
+        $order = Order::with('user')->find($id);
+        if (! $order) {
             return response()->json([
-                'message' => 'Unauthorized. You do not have permission to view this order.',
+                'message' => 'Order not found',
+                'status' => 404
+            ], 404);
+        }
+
+        // Optionally allow admins
+        if (Auth::guard('admin')->check()) {
+            return new OrderResource($order);
+        }
+
+        // Finally, enforce ownership
+        $user = Auth::guard('user')->user();
+        if ($order->user_id != $user->id) {
+            return response()->json([
+                'message' => 'This order does not belong to you',
                 'status' => 403
             ], 403);
         }
@@ -217,6 +233,13 @@ class OrderController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        // Prevent business and admin from updating orders
+        if (Auth::guard('business')->check() || Auth::guard('admin')->check()) {
+            return response()->json([
+                'message' => 'Unauthorized. Only regular users can update orders.'
+            ], 403);
+        }
+
         // Check user authentication
         if (!Auth::guard('user')->check()) {
             return response()->json([
@@ -231,13 +254,20 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
-            // Find the order and check if it belongs to the user
-            $order = Order::where('id', $id)
-                ->where('user_id', $user->id)
-                ->first();
+            // Ensure the order exists
+            try {
+                $order = Order::findOrFail($id);
+            } catch (ModelNotFoundException $e) {
+                return response()->json([
+                    'message' => 'Order not found'
+                ], 404);
+            }
 
-            if (!$order) {
-                throw new \Exception('Unauthorized. You do not have permission to update this order.');
+            // Check ownership
+            if ($order->user_id != $user->id) {
+                return response()->json([
+                    'message' => 'This order does not belong to you'
+                ], 403);
             }
 
             // Validate the request
@@ -333,7 +363,6 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Order updated successfully! Your order details have been changed.',
                 'status' => 200,
-                'data' => new OrderResource($order)
             ], 200);
 
         } catch (\Exception $e) {
@@ -374,6 +403,13 @@ class OrderController extends Controller
      */
     public function destroy(string $id)
     {
+        // Prevent business and admin from deleting orders
+        if (Auth::guard('business')->check() || Auth::guard('admin')->check()) {
+            return response()->json([
+                'message' => 'Unauthorized. Only regular users can delete orders.'
+            ], 403);
+        }
+
         // Check user authentication
         if (!Auth::guard('user')->check()) {
             return response()->json([
@@ -391,8 +427,7 @@ class OrderController extends Controller
             $orderExists = Order::where('id', $id)->exists();
             if (!$orderExists) {
                 return response()->json([
-                    'message' => 'Order not found',
-                    'status' => 404
+                    'message' => 'Order not found'
                 ], 404);
             }
 
@@ -403,14 +438,13 @@ class OrderController extends Controller
 
             if (!$order) {
                 return response()->json([
-                    'message' => 'Unauthorized. You do not have permission to delete this order.',
-                    'status' => 403
+                    'message' => 'This order does not belong to you'
                 ], 403);
             }
 
             // Return quantities back to products
             $products_list = json_decode($order->products_list, true);
-                $products = Product::whereIn('id', collect($products_list)->pluck('product_id'))->get();
+            $products = Product::whereIn('id', collect($products_list)->pluck('product_id'))->get();
 
             foreach ($products_list as $item) {
                 $product = $products->firstWhere('id', $item['product_id']);
