@@ -27,7 +27,8 @@ class Notification extends Model
     {
         return $this->morphTo();
     }
-    protected static function newFactory(){
+    protected static function newFactory()
+    {
         return \Modules\Notification\Database\Factories\NotificationFactory::new();
     }
 }

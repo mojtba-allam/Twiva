@@ -11,7 +11,9 @@ use Modules\Product\app\Models\Product;
 
 class Business extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The table associated with the model.
@@ -58,5 +60,5 @@ class Business extends Authenticatable
     {
         return \Modules\Business\database\factories\BusinessFactory::new();
     }
-    
+
 }

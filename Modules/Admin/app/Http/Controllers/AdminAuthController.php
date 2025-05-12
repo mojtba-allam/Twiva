@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Modules\Admin\app\Models\Admin;
 use Illuminate\Support\Facades\Hash;
 
-
 class AdminAuthController extends Controller
 {
     public function login(Request $request)

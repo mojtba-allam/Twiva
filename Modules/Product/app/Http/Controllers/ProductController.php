@@ -47,7 +47,7 @@ class ProductController extends Controller
         // Search by title
         if ($request->has('search')) {
             $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'like', '%' . $searchTerm . '%')
                   ->orWhere('description', 'like', '%' . $searchTerm . '%');
             });
@@ -220,7 +220,8 @@ class ProductController extends Controller
         $product->delete();
     }
 
-    public function edit(Request $request, string $id){
+    public function edit(Request $request, string $id)
+    {
         try {
             $product = Product::findOrFail($id);
 

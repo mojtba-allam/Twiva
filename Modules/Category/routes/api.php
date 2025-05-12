@@ -9,5 +9,5 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 // Use prefix for the routes
 Route::prefix('v1')->group(function () {
     Route::apiResource('categories', CategoryController::class)->names('category');
-    Route::get('categories/{id}',[CategoryController::class, 'show']);
+    Route::get('categories/{id}', [CategoryController::class, 'show']);
 });

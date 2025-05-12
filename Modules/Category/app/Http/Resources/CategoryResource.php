@@ -35,12 +35,12 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             // Only show the category URL in the index route
-            'url' =>$this-> when(route('category.index'), route('category.show', $this->id)),
+            'url' => $this-> when(route('category.index'), route('category.show', $this->id)),
 
         ];
 
         if ($this->relationLoaded('Product')) {
-            $products = $this->Product->map(function($product) use ($guard, $user) {
+            $products = $this->Product->map(function ($product) use ($guard, $user) {
                 $data = [
                     'id' => $product->id,
                     'title' => $product->title,

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Business\app\Models\Business;
+
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\Modules\Business\app\Models\Business>
  */

@@ -17,11 +17,11 @@ class Category extends Model
     protected $table = 'categories';
     public function Product(): HasMany
     {
-        return $this->hasMany(Product::class,'category_id');
+        return $this->hasMany(Product::class, 'category_id');
     }
     public function Admin(): BelongsTo
     {
-        return $this->belongsTo(Admin::class,'admin_id');
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 
     protected static function newFactory()

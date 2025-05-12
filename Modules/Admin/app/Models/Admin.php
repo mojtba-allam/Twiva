@@ -10,13 +10,13 @@ use Laravel\Sanctum\HasApiTokens;
 use Modules\Product\app\Models\Product;
 use Modules\Category\app\Models\Category;
 use Modules\Admin\database\factories\AdminFactory;
+
 class Admin extends Authenticatable
 {
-    protected $hidden = ['password', 'created_at', 'updated_at','remember_token'];
-
     /** @use HasFactory<\Database\Factories\AdminFactory> */
     use HasFactory;
     use HasApiTokens;
+    protected $hidden = ['password', 'created_at', 'updated_at','remember_token'];
     protected $table = 'admins';
     public function Product(): HasMany
     {
@@ -24,7 +24,7 @@ class Admin extends Authenticatable
     }
     public function Categoreis(): HasMany
     {
-        return $this->hasMany(Category::class,'admin_id');
+        return $this->hasMany(Category::class, 'admin_id');
     }
 
     protected static function newFactory()

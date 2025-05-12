@@ -106,7 +106,7 @@ class UserController extends Controller
                 if ($userData->orders->isEmpty()) {
                     $response['orders'] = 'User has no orders.';
                 } else {
-                    $response['orders'] = $userData->orders->map(function($order) {
+                    $response['orders'] = $userData->orders->map(function ($order) {
                         return [
                             'id' => $order->id,
                             'total_price' => $order->total_price,
@@ -152,7 +152,7 @@ class UserController extends Controller
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
-        if($user->id !== $request->user()->id){
+        if ($user->id !== $request->user()->id) {
             return response()->json(['message' => 'You are not authorized to update this user'], 403);
         }
         try {

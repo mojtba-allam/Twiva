@@ -1,4 +1,5 @@
 <?php
+
 namespace Modules\Order\app\Policies;
 
 use Modules\User\app\Models\User;

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Business\app\Models\Business;
 use Modules\Order\app\Models\Order;
 use Modules\Category\app\Models\Category;
+
 class Product extends Model
 {
     use HasFactory;
@@ -26,10 +27,10 @@ class Product extends Model
     ];
 
     // Status constants
-    const STATUS_PENDING = 'pending';
-    const STATUS_APPROVED = 'approved';
-    const STATUS_REJECTED = 'rejected';
-    const STATUS_DELETED = 'deleted';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_REJECTED = 'rejected';
+    public const STATUS_DELETED = 'deleted';
 
     // Scope for approved products only
     public function scopeApproved($query)

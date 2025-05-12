@@ -15,7 +15,7 @@ class CategoryDatabaseSeeder extends Seeder
 
         // Create categories using existing admins
         Category::factory(10)->create([
-            'admin_id' => fn() => $admins->random()->id
+            'admin_id' => fn () => $admins->random()->id
         ]);
     }
 }

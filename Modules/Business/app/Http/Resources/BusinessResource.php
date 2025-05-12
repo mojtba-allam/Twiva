@@ -53,14 +53,14 @@ class BusinessResource extends JsonResource
             $data = array_merge($data, [
                 'email' => $this->email,
                 'bio' => $this->bio,
-                'products' => $this->whenLoaded('products', function() use ($isAdmin, $isOwner) {
+                'products' => $this->whenLoaded('products', function () use ($isAdmin, $isOwner) {
 
-                            return $this->products
-                                ->filter(function($product) use ($isAdmin, $isOwner) {
-                                // normal users (not admin, not owner) see only approved
-                                return $isAdmin || $isOwner || $product->status === 'approved';
+                    return $this->products
+                        ->filter(function ($product) use ($isAdmin, $isOwner) {
+                            // normal users (not admin, not owner) see only approved
+                            return $isAdmin || $isOwner || $product->status === 'approved';
                         })
-                        ->map(function($product) use ($isAdmin, $isOwner) {
+                        ->map(function ($product) use ($isAdmin, $isOwner) {
                             // basic public fields
                             $productData = [
                                 'id'        => $product->id,
@@ -78,7 +78,7 @@ class BusinessResource extends JsonResource
                                 }
                             }
 
-                                return $productData;
+                            return $productData;
 
                         })
                         ->values();  // re‐index keys as a plain array

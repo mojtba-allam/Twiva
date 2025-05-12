@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\User\app\Models\User;
 use Modules\Product\app\Models\Product;
 use Modules\Order\app\Models\Order;
+
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Order>
  */

@@ -8,6 +8,7 @@ use Modules\Category\app\Http\Resources\CategoryResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Category\app\Http\Controllers\Controller;
+
 class CategoryController extends Controller
 {
     /**
@@ -70,18 +71,18 @@ class CategoryController extends Controller
 
             // Load relationships based on guard
             if ($guard === 'admin') {
-                $category->with(['Product' => function($query) {
+                $category->with(['Product' => function ($query) {
                     $query->with('business');
                 }]);
             } elseif ($guard === 'business') {
-                $category->with(['Product' => function($query) use ($user) {
-                    $query->where(function($q) use ($user) {
+                $category->with(['Product' => function ($query) use ($user) {
+                    $query->where(function ($q) use ($user) {
                         $q->where('status', 'approved')
                           ->orWhere('business_account_id', $user->id);
                     })->with('business');
                 }]);
             } else {
-                $category->with(['Product' => function($query) {
+                $category->with(['Product' => function ($query) {
                     $query->where('status', 'approved')
                           ->with('business');
                 }]);

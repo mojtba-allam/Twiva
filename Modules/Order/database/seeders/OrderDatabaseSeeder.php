@@ -15,7 +15,7 @@ class OrderDatabaseSeeder extends Seeder
 
         // Create orders
         Order::factory(50)->create([
-            'user_id' => fn() => $users->random()->id
+            'user_id' => fn () => $users->random()->id
         ]);
     }
 }

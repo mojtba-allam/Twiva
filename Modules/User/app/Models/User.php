@@ -10,10 +10,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Order\app\Models\Order;
 use Modules\User\database\factories\UserFactory;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
     use HasApiTokens;
     protected $table = 'users';
     /**
@@ -54,7 +56,8 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'user_id');
     }
 
-    protected static function newFactory(){
+    protected static function newFactory()
+    {
         // return \Modules\User\Database\Factories\UserFactory::new();
         return UserFactory::new();
     }

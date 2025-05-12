@@ -8,7 +8,6 @@ use Modules\Admin\app\Models\Admin;
 use Modules\Admin\app\Http\Resources\AdminResource as AdminResource;
 use Illuminate\Support\Facades\Hash;
 
-
 class AdminController extends Controller
 {
     protected $fillable = ['name', 'email', 'password'];

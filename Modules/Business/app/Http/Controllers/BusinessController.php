@@ -102,7 +102,7 @@ class BusinessController extends Controller
                 $business->load('products');
             } else {
                 // For non-admin, load only approved products
-                $business->load(['products' => function($query) {
+                $business->load(['products' => function ($query) {
                     $query->where('status', 'approved');
                 }]);
             }
@@ -198,10 +198,10 @@ class BusinessController extends Controller
         }
 
         $products = $business->products()
-            ->select('id','title','image_url','status','price','quantity')
-            ->orderBy('created_at','desc')
+            ->select('id', 'title', 'image_url', 'status', 'price', 'quantity')
+            ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function($product) {
+            ->map(function ($product) {
                 $product->product_url = route('products.show', $product->id);
                 return $product;
             });

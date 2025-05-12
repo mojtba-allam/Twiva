@@ -17,8 +17,8 @@ class ProductDatabaseSeeder extends Seeder
 
         // Create products
         Product::factory(100)->create([
-            'business_account_id' => fn() => $businessAccounts->random()->id,
-            'category_id' => fn() => $categories->random()->id
+            'business_account_id' => fn () => $businessAccounts->random()->id,
+            'category_id' => fn () => $categories->random()->id
         ]);
     }
 }

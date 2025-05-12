@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Category\app\Models\Category;
 use Modules\Business\app\Models\Business;
 use Modules\Product\app\Models\Product;
+
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\Modules\Product\app\Models\Product>
  */

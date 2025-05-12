@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Product\app\Models\Product;
 use Modules\User\app\Models\User;
+
 class Order extends Model
 {
     /** @use HasFactory<\Database\Factories\OrderFactory> */
@@ -24,11 +25,11 @@ class Order extends Model
 
     public function Product(): HasMany
     {
-        return $this->hasMany(Product::class,'product_id');
+        return $this->hasMany(Product::class, 'product_id');
     }
     public function User(): BelongsTo
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     protected static function newFactory()

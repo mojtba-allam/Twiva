@@ -27,7 +27,7 @@ class PendingProductResource extends JsonResource
             'price' => $this->price,
             'image_url' => $this->image_url,
             'quantity' => $this->quantity,
-            'category' => $this->whenLoaded('category', function() {
+            'category' => $this->whenLoaded('category', function () {
                 return [
                     'id' => $this->category->id,
                     'name' => $this->category->name
@@ -43,7 +43,7 @@ class PendingProductResource extends JsonResource
 
         // Additional information for admin only
         if ($isAdmin) {
-            $response['business'] = $this->whenLoaded('business', function() {
+            $response['business'] = $this->whenLoaded('business', function () {
                 return [
                     'id' => $this->business->id,
                     'name' => $this->business->name,

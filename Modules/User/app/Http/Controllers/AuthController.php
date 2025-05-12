@@ -29,40 +29,40 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'message' => 'User registered successfully'
-        ], 201 );
+        ], 201);
     }
     public function login(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
 
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user || !Hash::check($request->password, $user->password)) {
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            // 'user' => $user,
+            'id' => $user->id,
+            'message' => 'Login successful',
+            'token' => $token
         ]);
     }
 
-    $token = $user->createToken('auth_token')->plainTextToken;
+    public function logout(Request $request)
+    {
+        $request->user()->tokens()->delete();
 
-    return response()->json([
-        // 'user' => $user,
-        'id'=> $user->id,
-        'message' => 'Login successful',
-        'token' => $token
-    ]);
-}
-
-public function logout(Request $request)
-{
-    $request->user()->tokens()->delete();
-
-    return response()->json([
-        'message' => 'Logged out successfully'
-    ]);
-}
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
+    }
 
 }
